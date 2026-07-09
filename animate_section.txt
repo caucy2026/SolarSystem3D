@@ -1,0 +1,25 @@
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  // FPS + debug
+  fpsFrames++; fpsTime+=dt;
+  if(fpsTime>=0.5){
+    fpsEl.textContent = 'FPS:'+Math.round(fpsFrames/fpsTime)+' drag:'+isDragging+' v:'+velTheta.toFixed(3);
+    fpsFrames=0;fpsTime=0;
+  }
+  sun.rotation.y += dt * 0.3;
+  // 星带缓慢旋转
+  scene.children.forEach(function(c){
+    if(c.userData && c.userData.isBelt) c.rotation.y += dt * c.userData.speed;
+  });
+
+  // 惯性旋转
+  if(!isDragging && (Math.abs(velTheta)>0.00005 || Math.abs(velPhi)>0.00005)){
+    sph.setFromVector3(camera.position);
+    sph.theta += velTheta;
+    sph.phi   += velPhi;
+    sph.phi = Math.max(0.05, Math.min(Math.PI-0.05, sph.phi));
+    camera.position.setFromSpherical(sph);
+    centerView();
+    velTheta *= 0.985;
+ 

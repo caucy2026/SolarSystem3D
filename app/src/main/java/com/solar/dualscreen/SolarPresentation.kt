@@ -42,9 +42,18 @@ class SolarPresentation : AppCompatActivity() {
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                     val url = request.url.toString()
-                    // solarsystemscope textures
+                    // SSS textures: 优先从 assets 读取
                     if (url.contains("solarsystemscope.com/textures/download/")) {
                         val filename = url.substringAfterLast('/')
+                        // 优先 assets (预编译离线可用)
+                        try {
+                            val assetBytes = assets.open("textures/$filename").readBytes()
+                            val mime = if (filename.endsWith(".png")) "image/png" else "image/jpeg"
+                            Log.i(TAG, "Serving from assets: $filename (${assetBytes.size/1024}KB)")
+                            return WebResourceResponse(mime, "binary", 200, "OK",
+                                mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(assetBytes))
+                        } catch (_: Exception) {}
+                        // 回退: 运行时下载缓存
                         val file = File(texDir, filename)
                         if (file.exists() && file.length() > 5000) {
                             val bytes = file.readBytes()
@@ -54,6 +63,29 @@ class SolarPresentation : AppCompatActivity() {
                             return WebResourceResponse(mime, "binary", 200, "OK", headers, ByteArrayInputStream(bytes))
                         } else {
                             Log.w(TAG, "Not found locally: $filename")
+                        }
+                    }
+                    // Steve Albers 纹理 (卫星真实照片)
+                    if (url.contains("stevealbers.net/albers/sos/")) {
+                        val filename = url.substringAfterLast('/')
+                        // 优先 assets
+                        try {
+                            val assetBytes = assets.open("textures/$filename").readBytes()
+                            val mime = if (filename.endsWith(".png")) "image/png" else "image/jpeg"
+                            Log.i(TAG, "Serving Albers from assets: $filename (${assetBytes.size/1024}KB)")
+                            return WebResourceResponse(mime, "binary", 200, "OK",
+                                mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(assetBytes))
+                        } catch (_: Exception) {}
+                        // 回退缓存
+                        val file = File(texDir, filename)
+                        if (file.exists() && file.length() > 5000) {
+                            val bytes = file.readBytes()
+                            val mime = if (filename.endsWith(".png")) "image/png" else "image/jpeg"
+                            Log.i(TAG, "Serving Albers: $filename (${bytes.size/1024}KB)")
+                            return WebResourceResponse(mime, "binary", 200, "OK",
+                                mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(bytes))
+                        } else {
+                            Log.w(TAG, "Albers texture not found: $filename")
                         }
                     }
                     // STL 3D models: http://local.stl/filename.stl
@@ -110,6 +142,16 @@ class SolarPresentation : AppCompatActivity() {
         @JavascriptInterface
         fun onPlanetSelected(name: String) {
             onPlanetSelected?.invoke(name)
+        }
+
+        @JavascriptInterface
+        fun getMemoryInfo(): String {
+            val rt = Runtime.getRuntime()
+            val usedMB = (rt.totalMemory() - rt.freeMemory()) / 1048576
+            val maxMB = rt.maxMemory() / 1048576
+            val totalMB = rt.totalMemory() / 1048576
+            val nativeMB = android.os.Debug.getNativeHeapAllocatedSize() / 1048576
+            return "$usedMB/$totalMB/$maxMB/$nativeMB"
         }
     }
 

@@ -1,0 +1,14 @@
+if(isSun){
+    texLoader.load(TEX+'2k_sun.jpg', function(tex){ mat.map=tex; mat.needsUpdate=true; }, undefined, function(){});
+    var gc=document.createElement('canvas'); gc.width=gc.height=256;
+    var gctx=gc.getContext('2d');
+    var gGrad=gctx.createRadialGradient(128,128,d.size*90,128,128,d.size*250);
+    gGrad.addColorStop(0,'rgba(255,240,180,0.4)');
+    gGrad.addColorStop(0.3,'rgba(255,200,60,0.25)');
+    gGrad.addColorStop(0.6,'rgba(255,120,20,0.08)');
+    gGrad.addColorStop(1,'rgba(0,0,0,0)');
+    gctx.fillStyle=gGrad; gctx.fillRect(0,0,256,256);
+    glowSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false}));
+    glowSprite.scale.set(d.size*8,d.size*8,1);
+    scene.add(glowSprite);
+  } e
