@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build APK",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D",
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

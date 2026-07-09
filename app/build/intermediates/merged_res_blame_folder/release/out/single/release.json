@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/layout_activity_main.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/drawable_ic_launcher_fg.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/drawable/ic_launcher_fg.xml"
+    },
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/drawable_ic_launcher_bg.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/drawable/ic_launcher_bg.xml"
+    },
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/layout_activity_solar.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/layout/activity_solar.xml"
+    },
+    {
+        "merged": "com.solar.dualscreen.app-merged_res-31:/mipmap-hdpi_ic_launcher.xml.flat",
+        "source": "com.solar.dualscreen.app-main-32:/mipmap-hdpi/ic_launcher.xml"
+    }
+]

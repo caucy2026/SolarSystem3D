@@ -1,0 +1,4 @@
+#Thu Jul 09 14:20:40 CST 2026
+base.0=D\:\\work\\ai_code\\SolarSystem3D\\app\\build\\intermediates\\dex\\release\\mergeDexRelease\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
