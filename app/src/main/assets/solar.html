@@ -734,7 +734,7 @@ var rockColors = [0x888888,0x998877,0x776655,0x887766,0x999999,0xaa9977,0x665544
                   0x666666,0x554433,0x777777,0x887755,0x998866,0x445566,0x776644,0x8899aa,0x998877,0x555544];
 
 function makeRockGeo(size, seed) {
-  var geo = new THREE.IcosahedronGeometry(size, 2);
+  var geo = new THREE.IcosahedronGeometry(size, 3);
   var pos = geo.attributes.position;
   for (var i=0; i<pos.count; i++) {
     var x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
@@ -743,11 +743,12 @@ function makeRockGeo(size, seed) {
     var n1 = Math.sin(x*5.7+seed*13.1)*Math.cos(z*4.3+seed*7.7)*Math.sin(y*6.1+seed*3.3);
     var n2 = Math.sin(x*11.3+seed*17.9)*Math.cos(y*9.7+seed*11.3)*0.5;
     var n3 = Math.sin(y*15.7+seed*23.3)*Math.cos(z*13.1+seed*19.1)*0.25;
-    var noise = 0.65 + 0.35*(n1 + n2 + n3)/1.75;
+    // 限制噪声范围 0.55~1.45，确保不会坍缩
+    var noise = 0.55 + 0.45 * Math.max(-1, Math.min(1, (n1 + n2 + n3)/1.75));
     // 陨石坑凹陷
     var crater = 1.0;
     var cseed = seed*7.13 + i*3.17;
-    if (Math.abs(Math.sin(cseed)) > 0.85) crater = 0.75;
+    if (Math.abs(Math.sin(cseed)) > 0.7) crater = 0.82;
     pos.setXYZ(i, x*noise*crater, y*noise*crater, z*noise*crater);
   }
   geo.computeVertexNormals();
@@ -757,10 +758,10 @@ function makeRockGeo(size, seed) {
 // 通用小行星（火星-木星带穿梭）
 for (var ai=0; ai<12; ai++) {
   var seed = Math.random()*1000;
-  var size = 0.08 + Math.random()*0.25;
+  var size = 0.25 + Math.random()*0.35;
   var geo = makeRockGeo(size, seed);
   var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
-  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2});
+  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2, emissive:rockColors[colorIdx], emissiveIntensity:0.15});
   var mesh = new THREE.Mesh(geo, mat);
   asteroidGroup.add(mesh);
   
@@ -779,10 +780,10 @@ for (var ai=0; ai<12; ai++) {
 // 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s
 for (var ai=0; ai<8; ai++) {
   var seed = Math.random()*2000 + 1000;
-  var size = 0.10 + Math.random()*0.20;
+  var size = 0.20 + Math.random()*0.30;
   var geo = makeRockGeo(size, seed);
   var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
-  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2});
+  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2, emissive:rockColors[colorIdx], emissiveIntensity:0.15});
   var mesh = new THREE.Mesh(geo, mat);
   asteroidGroup.add(mesh);
   
