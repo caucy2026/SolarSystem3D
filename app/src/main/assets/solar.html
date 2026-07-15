@@ -746,7 +746,7 @@ var STL_MODELS = [
 // 通用小行星（火星-木星带穿梭）— 使用STL真实模型
 for (var ai=0; ai<12; ai++) {
   var modelPath = STL_MODELS[ai % STL_MODELS.length];
-  var size = 0.3 + Math.random()*0.5;
+  var size = 0.6 + Math.random()*0.5;
   var a = 21 + Math.random()*10;
   var e = 0.10 + Math.random()*0.40;
   var iAng = (Math.random()-0.5)*0.5;
@@ -770,6 +770,7 @@ for (var ai=0; ai<12; ai++) {
   (function(mesh, modelPath, size, ai){
     loadSTLModel(modelPath, rockColors[ai%rockColors.length], size, function(stlMesh){
       if(stlMesh){
+        console.log('STL loaded #'+ai+': '+modelPath+' verts='+stlMesh.geometry.attributes.position.count);
         var box = new THREE.Box3().setFromObject(stlMesh);
         var sz = box.getSize(new THREE.Vector3());
         var maxDim = Math.max(sz.x, sz.y, sz.z);
@@ -790,7 +791,7 @@ for (var ai=0; ai<12; ai++) {
 // 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s — 使用STL模型
 for (var ai=0; ai<8; ai++) {
   var modelPath = STL_MODELS[(ai+2) % STL_MODELS.length];
-  var size = 0.25 + Math.random()*0.4;
+  var size = 0.5 + Math.random()*0.5;
   var a = 27 + Math.random()*4;
   var e = 0.30 + Math.random()*0.35;
   var iAng = (Math.random()-0.5)*0.3;
