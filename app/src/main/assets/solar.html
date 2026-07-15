@@ -759,7 +759,6 @@ for (var ai=0; ai<12; ai++) {
   var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
   var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
   var mesh = new THREE.Mesh(geo, mat);
-  mesh.visible = false;
   asteroidGroup.add(mesh);
   
   asteroids.push({
@@ -804,7 +803,6 @@ for (var ai=0; ai<8; ai++) {
   var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
   var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
   var mesh = new THREE.Mesh(geo, mat);
-  mesh.visible = false;
   asteroidGroup.add(mesh);
   
   asteroids.push({
