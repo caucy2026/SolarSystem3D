@@ -734,22 +734,16 @@ var rockColors = [0x888888,0x998877,0x776655,0x887766,0x999999,0xaa9977,0x665544
                   0x666666,0x554433,0x777777,0x887755,0x998866,0x445566,0x776644,0x8899aa,0x998877,0x555544];
 
 function makeRockGeo(size, seed) {
-  var geo = new THREE.IcosahedronGeometry(size, 3);
+  // SphereGeometry 16x8 + 轻微径向扰动
+  var geo = new THREE.SphereGeometry(size, 16, 8);
   var pos = geo.attributes.position;
-  for (var i=0; i<pos.count; i++) {
-    var x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
+  for (var i = 0; i < pos.count; i++) {
+    var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     var dist = Math.sqrt(x*x + y*y + z*z);
     if (dist < 0.001) continue;
-    var n1 = Math.sin(x*5.7+seed*13.1)*Math.cos(z*4.3+seed*7.7)*Math.sin(y*6.1+seed*3.3);
-    var n2 = Math.sin(x*11.3+seed*17.9)*Math.cos(y*9.7+seed*11.3)*0.5;
-    var n3 = Math.sin(y*15.7+seed*23.3)*Math.cos(z*13.1+seed*19.1)*0.25;
-    // 轻微变形 0.75~1.25，模拟自然岩石表面
-    var noise = 0.75 + 0.25 * Math.max(-1, Math.min(1, (n1 + n2 + n3)/1.75));
-    // 陨石坑凹陷
-    var crater = 1.0;
-    var cseed = seed*7.13 + i*3.17;
-    if (Math.abs(Math.sin(cseed)) > 0.7) crater = 0.92;
-    pos.setXYZ(i, x*noise*crater, y*noise*crater, z*noise*crater);
+    // 轻微不规则变形，范围 0.85~1.12
+    var r = 1.0 + 0.12 * Math.sin(x*3.7+seed*1.3) * Math.cos(z*2.9+seed*3.7) * Math.sin(y*4.1+seed*5.3);
+    pos.setXYZ(i, x*r, y*r, z*r);
   }
   geo.computeVertexNormals();
   return geo;
