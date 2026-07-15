@@ -783,6 +783,9 @@ for (var ai=0; ai<12; ai++) {
         for(var k=0; k<asteroids.length; k++){
           if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
         }
+      } else {
+        // STL加载失败：删除占位球
+        asteroidGroup.remove(mesh);
       }
     });
   })(mesh, modelPath, size, ai);
@@ -824,6 +827,8 @@ for (var ai=0; ai<8; ai++) {
         for(var k=0; k<asteroids.length; k++){
           if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
         }
+      } else {
+        asteroidGroup.remove(mesh);
       }
     });
   })(mesh, modelPath, size, ai);
