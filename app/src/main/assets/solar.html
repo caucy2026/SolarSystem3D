@@ -21,34 +21,49 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000015);
 
-const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.5, 600);
-const spherical = new THREE.Spherical(85, Math.PI*0.35, 0.4);
-camera.position.setFromSpherical(spherical);
-camera.lookAt(0,0,0);
+// 读取 URL 参数: ?focus=Jupiter 表示主屏聚焦模式
+var urlParams = new URLSearchParams(window.location.search);
+var FOCUS_PLANET = urlParams.get('focus') || '';
+var IS_MAIN_SCREEN = !!FOCUS_PLANET;
+console.log('SOLAR: focus=' + (FOCUS_PLANET || 'none') + ' main=' + IS_MAIN_SCREEN);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.3, 600);
+var focusTarget = new THREE.Vector3(0, 0, 0);
+var focusDistance = IS_MAIN_SCREEN ? 3.0 : 85;  // 主屏木星超大特写，副屏全景
+
+if (IS_MAIN_SCREEN) {
+  // 主屏：近距离观察焦点星球
+  const spherical = new THREE.Spherical(focusDistance, Math.PI*0.3, 0.0);
+  camera.position.setFromSpherical(spherical);
+  camera.lookAt(focusTarget);
+} else {
+  // 副屏：太阳系全景
+  const spherical = new THREE.Spherical(85, Math.PI*0.35, 0.4);
+  camera.position.setFromSpherical(spherical);
+  camera.lookAt(0,0,0);
+}
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.physicallyCorrectLights = false;  // 关闭物理光照，使用简单光照模型
+renderer.physicallyCorrectLights = false;
 document.body.appendChild(renderer.domElement);
 
-// 太阳光源: PointLight 在原点, decay=0 无距离衰减
+// 太阳光源
 scene.add(new THREE.AmbientLight(0x334455, 0.35));
 const sunLight = new THREE.PointLight(0xffffff, 5, 0, 0);
 scene.add(sunLight);
 
-// ============ 纹理 (shouldInterceptRequest 拦截到本地缓存) ============
+// ============ 纹理 ============
 const texLoader = new THREE.TextureLoader();
 const TEX = 'https://www.solarsystemscope.com/textures/download/';
 
-// ============ 银河背景 (SSS Milky Way) ============
+// 银河背景
 scene.background = new THREE.Color(0x000012);
-// 加载银河纹理作为场景背景
 texLoader.load(TEX+'2k_stars_milky_way.jpg', function(tex){
   scene.background = tex;
   console.log('Milky Way background loaded');
 }, undefined, function(){
-  // 加载失败兜底：星空粒子
   var sv=[];for(var i=0;i<2000;i++){var r=180+Math.random()*20,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(ph)*Math.cos(th),r*Math.sin(ph)*Math.sin(th),r*Math.cos(ph));}
   var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
   scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xccccff,size:0.5,sizeAttenuation:false})));
@@ -134,40 +149,40 @@ scene.add(new THREE.Mesh(glowGeo, glowMat));
 var bloomTex=(function(){var c=document.createElement('canvas');c.width=256;c.height=256;var ctx=c.getContext('2d'),g=ctx.createRadialGradient(128,128,0,128,128,128);g.addColorStop(0,'rgba(255,240,200,0.45)');g.addColorStop(0.06,'rgba(255,160,50,0.25)');g.addColorStop(0.25,'rgba(255,40,5,0.08)');g.addColorStop(0.6,'rgba(255,5,0,0.02)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,256,256);return new THREE.CanvasTexture(c);})();
 for(var gi=0;gi<3;gi++){var sz=5.5+gi*2.5,s=new THREE.Sprite(new THREE.SpriteMaterial({map:bloomTex,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.25-gi*0.07}));s.scale.set(sz,sz,1);s.renderOrder=999;scene.add(s);}
 
-// NASA 纹理根 URL
-const NASA_TEX = 'https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/Images%20and%20Textures/';
+// NASA 纹理走 SSS 拦截通道：TEX+nasa/filename.jpg → shouldInterceptRequest → assets/textures/nasa/
+const NASA_TEX = TEX + 'nasa/';
 
 // ============ 行星数据 (地球60秒一圈, 其他等比例) ============
 const planets = [
   {name:'Mercury',cn:'水星', orbit:6,  size:0.5,  color:0xb0b0b0, period:15,   rot:15,  tex:'2k_mercury.jpg'},
   {name:'Venus',  cn:'金星', orbit:10, size:0.95, color:0xe8c860, period:37,   rot:20,  tex:'2k_venus_atmosphere.jpg'},
   {name:'Earth',  cn:'地球', orbit:15, size:1.0,  color:0x5080d0, period:60,   rot:15,  tex:'2k_earth_daymap.jpg',
-   moons:[{name:'Moon',cn:'月球',orbit:2.0,size:0.7,color:0xc0c0c0,period:5,tex:'2k_moon.jpg'}]},
+   moons:[{name:'Moon',cn:'月球',orbit:3.5,size:0.7,color:0xc0c0c0,period:5,tex:'2k_moon.jpg'}]},
   {name:'Mars',   cn:'火星', orbit:20, size:0.7,  color:0xd04020, period:113,  rot:15,  tex:'2k_mars.jpg',
-   moons:[{name:'Phobos',orbit:1.0,size:0.3,color:0x887766,period:0.8},{name:'Deimos',orbit:1.5,size:0.28,color:0x998877,period:1.6}]},
+   moons:[{name:'Phobos',orbit:1.8,size:0.3,color:0x887766,period:0.8},{name:'Deimos',orbit:2.5,size:0.28,color:0x998877,period:1.6}]},
   {name:'Jupiter',cn:'木星', orbit:28, size:2.0,  color:0xd8b868, period:712,  rot:15,  tex:'2k_jupiter.jpg',
    moons:[
-    {name:'Io',orbit:1.5,size:0.55,color:0xe8d830,period:2,tex:NASA_TEX+'Jupiter%20-%20Io%20(A)/Jupiter%20-%20Io%20(A).jpg'},
-    {name:'Europa',orbit:2.0,size:0.5,color:0xd8e0e8,period:4,tex:NASA_TEX+'Jupiter%20-%20Europa/Jupiter%20-%20Europa.jpg'},
-    {name:'Ganymede',orbit:2.5,size:0.6,color:0xa0a0a8,period:7,tex:NASA_TEX+'Jupiter%20-%20Ganymede/Jupiter%20-%20Ganymede.jpg'},
-    {name:'Callisto',orbit:3.0,size:0.55,color:0x707078,period:17,tex:NASA_TEX+'Jupiter%20-%20Callisto/Jupiter%20-%20Callisto.jpg'}
+    {name:'Io',orbit:4.5,size:0.55,color:0xe8d830,period:2,tex:NASA_TEX+'Jupiter%20-%20Io%20(A)/Jupiter%20-%20Io%20(A).jpg'},
+    {name:'Europa',orbit:7.0,size:0.5,color:0xd8e0e8,period:4,tex:NASA_TEX+'Jupiter%20-%20Europa/Jupiter%20-%20Europa.jpg'},
+    {name:'Ganymede',orbit:10.0,size:0.6,color:0xa0a0a8,period:7,tex:NASA_TEX+'Jupiter%20-%20Ganymede/Jupiter%20-%20Ganymede.jpg'},
+    {name:'Callisto',orbit:15.0,size:0.55,color:0x707078,period:17,tex:NASA_TEX+'Jupiter%20-%20Callisto/Jupiter%20-%20Callisto.jpg'}
    ]},
   {name:'Saturn', cn:'土星', orbit:37, size:1.7,  color:0xe0c880, period:1768, rot:15,  tex:'2k_saturn.jpg', ring:true,
    moons:[
-    {name:'Titan',orbit:2.5,size:0.6,color:0xd8b040,period:16,tex:NASA_TEX+'Saturn%20-%20Titan/Saturn%20-%20Titan.jpg'},
-    {name:'Enceladus',orbit:1.8,size:0.3,color:0xe8e8f0,period:2,tex:NASA_TEX+'Saturn%20-%20Enceladus/Saturn%20-%20Enceladus.jpg'}
+    {name:'Titan',orbit:7.0,size:0.6,color:0xd8b040,period:16,tex:NASA_TEX+'Saturn%20-%20Titan/Saturn%20-%20Titan.jpg'},
+    {name:'Enceladus',orbit:4.5,size:0.3,color:0xe8e8f0,period:2,tex:NASA_TEX+'Saturn%20-%20Enceladus/Saturn%20-%20Enceladus.jpg'}
    ]},
   {name:'Uranus', cn:'天王星',orbit:47, size:1.3,  color:0x80d0d8, period:5043, rot:15, tex:'2k_uranus.jpg',
    moons:[
-    {name:'Miranda',orbit:1.3,size:0.28,color:0xa0a8b0,period:8,tex:NASA_TEX+'Uranus%20-%20Miranda/Uranus%20-%20Miranda.jpg'},
-    {name:'Ariel',orbit:1.7,size:0.35,color:0x90a0a8,period:12,tex:NASA_TEX+'Uranus%20-%20Ariel/Uranus%20-%20Ariel.jpg'},
-    {name:'Umbriel',orbit:2.1,size:0.35,color:0x707880,period:16,tex:NASA_TEX+'Uranus%20-%20Umbriel/Uranus%20-%20Umbriel.jpg'},
-    {name:'Titania',orbit:2.5,size:0.4,color:0x889098,period:36,tex:NASA_TEX+'Uranus%20-%20Titania/Uranus%20-%20Titania.jpg'},
-    {name:'Oberon',orbit:3.0,size:0.38,color:0x788088,period:56,tex:NASA_TEX+'Uranus%20-%20Oberon/Uranus%20-%20Oberon.jpg'}
+    {name:'Miranda',orbit:3.5,size:0.28,color:0xa0a8b0,period:8,tex:NASA_TEX+'Uranus%20-%20Miranda/Uranus%20-%20Miranda.jpg'},
+    {name:'Ariel',orbit:5.0,size:0.35,color:0x90a0a8,period:12,tex:NASA_TEX+'Uranus%20-%20Ariel/Uranus%20-%20Ariel.jpg'},
+    {name:'Umbriel',orbit:6.5,size:0.35,color:0x707880,period:16,tex:NASA_TEX+'Uranus%20-%20Umbriel/Uranus%20-%20Umbriel.jpg'},
+    {name:'Titania',orbit:8.0,size:0.4,color:0x889098,period:36,tex:NASA_TEX+'Uranus%20-%20Titania/Uranus%20-%20Titania.jpg'},
+    {name:'Oberon',orbit:10.0,size:0.38,color:0x788088,period:56,tex:NASA_TEX+'Uranus%20-%20Oberon/Uranus%20-%20Oberon.jpg'}
    ]},
   {name:'Neptune',cn:'海王星',orbit:55, size:1.2,  color:0x4060e0, period:9890, rot:15,  tex:'2k_neptune.jpg',
    moons:[
-    {name:'Triton',orbit:2.5,size:0.5,color:0xb8c0c8,period:6,tex:NASA_TEX+'Neptune%20-%20Triton/Neptune%20-%20Triton.jpg'}
+    {name:'Triton',orbit:7.0,size:0.5,color:0xb8c0c8,period:6,tex:NASA_TEX+'Neptune%20-%20Triton/Neptune%20-%20Triton.jpg'}
    ]},
   // ===== 小行星带 (火星22 ↔ 木星28之间) =====
   {name:'Bennu',    cn:'小行星 Bennu(3D)', orbit:23, size:1.1, color:0x999999, period:180, rot:5, model:'models/bennu.stl'},
@@ -175,6 +190,7 @@ const planets = [
   {name:'Toutatis', cn:'Toutatis(3D)',    orbit:25, size:0.9,  color:0x887766, period:220, rot:4, model:'models/toutatis.stl'},
   {name:'Geographos',cn:'Geographos(3D)',   orbit:26,size:0.9,color:0x998877,period:240,rot:6, model:'models/geographos.stl'},
   {name:'Kleopatra',cn:'小行星 Kleopatra(3D)',orbit:27,size:1.1,color:0xaa9977,period:260,rot:3, model:'models/kleopatra.stl'},
+  {name:'RQ36',    cn:'小行星 RQ36(3D)',  orbit:25.5,size:1.0,color:0x887766,period:240,rot:5, model:'models/asteroid_rq36.stl'},
 ];
 
 // ============ 真实初始位置 (2026-07-07, J2000+9684天) ============
@@ -397,6 +413,8 @@ planets.forEach((p,i)=>{
   ));
 });
 
+// 主屏初始状态：只显示焦点星球
+if (IS_MAIN_SCREEN) updateMainScreenVisibility();
 
 
 // ============ FPS ============
@@ -407,111 +425,147 @@ document.body.appendChild(fpsEl);
 
 // ============ 触摸拾取 ============
 const raycaster = new THREE.Raycaster();
-let isDragging = false, prevX = 0, prevY = 0, pinchDist = 0;
-let downX = 0, downY = 0;
-let velTheta = 0, velPhi = 0;  // 惯性旋转速度
-const sph = new THREE.Spherical();
+var isDragging = false, prevX = 0, prevY = 0, pinchDist = 0, pinchMidX = 0, pinchMidY = 0;
+var downX = 0, downY = 0;
+var velTheta = 0, velPhi = 0;
 
-function centerView() { camera.lookAt(0,0,0); }
-
-renderer.domElement.addEventListener('pointerdown', e=>{
-  e.preventDefault();
-  isDragging=true; downX=e.clientX; downY=e.clientY; prevX=e.clientX; prevY=e.clientY;
-  velTheta=0; velPhi=0;
-});
-// 触摸事件备份
-renderer.domElement.addEventListener('touchstart', e=>{
-  e.preventDefault();
-  if(e.touches.length===1){
-    isDragging=true; downX=e.touches[0].clientX; downY=e.touches[0].clientY;
-    prevX=e.touches[0].clientX; prevY=e.touches[0].clientY;
-    velTheta=0; velPhi=0;
-  }
-}, {passive:false});
-
-renderer.domElement.addEventListener('pointermove', e=>{
-  if(!isDragging) return;
-  e.preventDefault();
-  const dx=e.clientX-prevX, dy=e.clientY-prevY;
-  velTheta = velTheta*0.6 - dx*0.008*0.4;
-  velPhi   = velPhi*0.6   - dy*0.008*0.4;
-  // 实时旋转
-  sph.setFromVector3(camera.position);
-  sph.theta -= dx*0.008;
-  sph.phi   -= dy*0.008;
-  sph.phi = Math.max(0.05, Math.min(Math.PI-0.05, sph.phi));
-  camera.position.setFromSpherical(sph);
-  centerView();
-  prevX=e.clientX; prevY=e.clientY;
-});
-renderer.domElement.addEventListener('touchmove', e=>{
-  if(!isDragging || e.touches.length!==1) return;
-  e.preventDefault();
-  const dx=e.touches[0].clientX-prevX, dy=e.touches[0].clientY-prevY;
-  velTheta = velTheta*0.6 - dx*0.008*0.4;
-  velPhi   = velPhi*0.6   - dy*0.008*0.4;
-  sph.setFromVector3(camera.position);
-  sph.theta -= dx*0.008;
-  sph.phi   -= dy*0.008;
-  sph.phi = Math.max(0.05, Math.min(Math.PI-0.05, sph.phi));
-  camera.position.setFromSpherical(sph);
-  centerView();
-  prevX=e.touches[0].clientX; prevY=e.touches[0].clientY;
-}, {passive:false});
-
-renderer.domElement.addEventListener('pointerup', e=>{
-  isDragging=false;
-  const dist = Math.hypot(e.clientX-downX, e.clientY-downY);
-  if(dist < 5) doPick(e.clientX, e.clientY);
-});
-renderer.domElement.addEventListener('touchend', e=>{
-  isDragging=false;
-  if(downX>=0){
-    const dist = Math.hypot((e.changedTouches[0]||{}).clientX-downX||0, (e.changedTouches[0]||{}).clientY-downY||0);
-    if(dist < 5 && e.changedTouches[0]) doPick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-  }
-});
-
-function doPick(cx, cy){
-  const m = new THREE.Vector2((cx/innerWidth)*2-1, -(cy/innerHeight)*2+1);
-  raycaster.setFromCamera(m, camera);
-  const sunHit = raycaster.intersectObject(sun);
-  if(sunHit.length>0){ try{Android.onPlanetSelected('Sun')}catch(e){} return; }
-  const hits = raycaster.intersectObjects(planetMeshes, true);
-  if(hits.length>0){
-    let obj = hits[0].object;
-    while(obj && !obj.userData.planet) obj = obj.parent;
-    if(obj && obj.userData.planet) try{Android.onPlanetSelected(obj.userData.planet.name)}catch(e){}
-  }
+function centerView() {
+  camera.lookAt(focusTarget);
 }
 
-renderer.domElement.addEventListener('wheel', e=>{
+// 触摸开始
+renderer.domElement.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    downX = e.touches[0].clientX; downY = e.touches[0].clientY;
+    prevX = downX; prevY = downY;
+    velTheta = 0; velPhi = 0;
+  } else if (e.touches.length === 2) {
+    isDragging = false;
+    pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  }
   e.preventDefault();
-  sph.setFromVector3(camera.position);
-  sph.radius += e.deltaY*0.08;
-  sph.radius = Math.max(8, Math.min(180, sph.radius));
-  camera.position.setFromSpherical(sph);
-  centerView();
-}, {passive:false});
+}, {passive: false});
 
-// 双指缩放
-renderer.domElement.addEventListener('touchstart', e=>{
-  if(e.touches.length===2){
-    isDragging=false;
-    pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-  }
-});
-renderer.domElement.addEventListener('touchmove', e=>{
-  if(e.touches.length===2){
-    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    sph.setFromVector3(camera.position);
-    sph.radius *= pinchDist/d;
-    sph.radius = Math.max(8, Math.min(180, sph.radius));
-    camera.position.setFromSpherical(sph);
+// 触摸移动
+renderer.domElement.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1 && isDragging) {
+    var dx = e.touches[0].clientX - prevX, dy = e.touches[0].clientY - prevY;
+    velTheta = velTheta*0.6 - dx*0.0032;
+    velPhi   = velPhi*0.6   - dy*0.0032;
+    var s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+    s.theta -= dx*0.008;
+    s.phi   -= dy*0.008;
+    s.phi = Math.max(0.05, Math.min(Math.PI-0.05, s.phi));
+    var off = new THREE.Vector3().setFromSpherical(s);
+    camera.position.copy(focusTarget).add(off);
     centerView();
-    pinchDist=d;
+    prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    // 缩放
+    var s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+    s.radius *= pinchDist / d;
+    s.radius = Math.max(IS_MAIN_SCREEN ? 1.5 : 8, Math.min(180, s.radius));
+    // 平移：移动焦点，相机跟随
+    var dx = midX - pinchMidX, dy = midY - pinchMidY;
+    var panSpeed = s.radius * 0.0015;
+    var right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    var up = new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+    focusTarget.add(right.multiplyScalar(-dx * panSpeed));
+    focusTarget.add(up.multiplyScalar(dy * panSpeed));
+    // 应用相机位置
+    var off = new THREE.Vector3().setFromSpherical(s);
+    camera.position.copy(focusTarget).add(off);
+    centerView();
+    pinchDist = d;
+    pinchMidX = midX; pinchMidY = midY;
   }
+  e.preventDefault();
+}, {passive: false});
+
+// 触摸结束
+renderer.domElement.addEventListener('touchend', function(e) {
+  // 主屏只观看，不点击选择
+  if (!IS_MAIN_SCREEN && isDragging && downX >= 0) {
+    var ct = e.changedTouches[0];
+    if (ct) {
+      var dist = Math.hypot(ct.clientX - downX, ct.clientY - downY);
+      if (dist < 8) {
+        var m = new THREE.Vector2((ct.clientX/innerWidth)*2-1, -(ct.clientY/innerHeight)*2+1);
+        raycaster.setFromCamera(m, camera);
+        var sunHit = raycaster.intersectObject(sun);
+        if (sunHit.length > 0) { onSelectPlanet('Sun'); }
+        else {
+          var hits = raycaster.intersectObjects(planetMeshes, true);
+          if (hits.length > 0) {
+            var obj = hits[0].object;
+            while (obj && !obj.userData.planet) obj = obj.parent;
+            if (obj && obj.userData.planet) onSelectPlanet(obj.userData.planet.name);
+          }
+        }
+      }
+    }
+  }
+  isDragging = false;
+  downX = -1;
 });
+
+// 鼠标滚轮缩放
+renderer.domElement.addEventListener('wheel', function(e) {
+  e.preventDefault();
+  var s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+  s.radius += e.deltaY * 0.08;
+  s.radius = Math.max(IS_MAIN_SCREEN ? 1.5 : 8, Math.min(180, s.radius));
+  var off = new THREE.Vector3().setFromSpherical(s);
+  camera.position.copy(focusTarget).add(off);
+  centerView();
+}, {passive: false});
+
+// 被 MainActivity 调用：切换聚焦星球（主屏）
+// 主屏：只显示焦点星球，隐藏其余
+function updateMainScreenVisibility() {
+  planetMeshes.forEach(function(m) {
+    var p = m.userData.planet;
+    m.visible = !IS_MAIN_SCREEN || (p && p.name === FOCUS_PLANET);
+    // 同时切换子节点（标签、光环等）
+    m.children.forEach(function(c) { c.visible = m.visible; });
+  });
+  // 太阳特殊处理
+  if (typeof sun !== 'undefined') sun.visible = !IS_MAIN_SCREEN || FOCUS_PLANET === 'Sun';
+}
+
+// 触摸拾取已整合到 touchend 处理器中
+// 副屏点击 → 通知主屏切换
+function onSelectPlanet(name) {
+  console.log('SOLAR: onSelectPlanet ' + name + ' main=' + IS_MAIN_SCREEN);
+  if (IS_MAIN_SCREEN) {
+    FOCUS_PLANET = name;
+    if (name === 'Sun') {
+      focusTarget.set(0, 0, 0);
+      focusDistance = 3.5 * 2.0;  // 太阳半径3.5，放大
+    } else {
+      var fm = planetMeshes.find(function(m) { return m.userData.planet.name === name; });
+      if (fm) {
+        focusTarget.copy(fm.position);
+        focusDistance = (fm.userData.planet.size || 1.0) * 2.0;
+        focusDistance = Math.max(1.5, Math.min(30, focusDistance));
+      }
+    }
+    updateMainScreenVisibility();
+    var s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+    s.radius = focusDistance;
+    var off = new THREE.Vector3().setFromSpherical(s);
+    camera.position.copy(focusTarget).add(off);
+    centerView();
+  } else {
+    try { Android.onPlanetSelected(name); } catch(e) {}
+  }
+}
 
 const clock = new THREE.Clock();
 // 收集所有光环（独立对象，非行星子节点）
@@ -660,6 +714,129 @@ function randomYellowSpot(){
 randomBlueSpot();randomYellowSpot();
 }catch(e){console.log("PARTICLES ERROR: "+e.message+" at line "+e.lineNumber);}
 
+// ===== Asteroid Transit & Jupiter Capture System =====
+// 9 颗程序化小行星在火星-木星间穿梭，靠近木星时被引力捕获
+// NASA RQ36 小行星模型已加入 planets[] 用 STL 渲染
+
+var asteroidGroup = new THREE.Group(); scene.add(asteroidGroup);
+var CAPTURE_RADIUS = 12.0;
+var CAPTURE_THRESHOLD = 5.0;
+var asteroids = [];
+var impactEffects = [];  // fireballs, ejecta, craters
+
+function makeRockGeo(size, seed) {
+  // 随机选几何体类型：5种不同的基础形状
+  var types = ['ico','dode','octa','box','elong'];
+  var type = types[Math.floor(Math.abs(seed*7919) % types.length)];
+  var geo;
+  if (type === 'dode') {
+    geo = new THREE.DodecahedronGeometry(size, 0);
+    // 手动细分一次让面更多
+  } else if (type === 'octa') {
+    geo = new THREE.OctahedronGeometry(size, 1);
+  } else if (type === 'box') {
+    geo = new THREE.BoxGeometry(size*1.3, size*0.8, size*1.1, 2, 2, 2);
+  } else if (type === 'elong') {
+    // 细长型：先做球再拉伸
+    geo = new THREE.IcosahedronGeometry(size*0.7, 2);
+  } else {
+    geo = new THREE.IcosahedronGeometry(size, 2);  // 细分2级=162顶点
+  }
+  
+  var pos = geo.attributes.position;
+  // 多层噪声位移 + 陨石坑效果
+  for (var i=0; i<pos.count; i++) {
+    var x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
+    var dist = Math.sqrt(x*x + y*y + z*z);
+    if (dist < 0.001) continue;
+    var nx=x/dist, ny=y/dist, nz=z/dist;
+    // 3层不同频率的噪声
+    var n1 = Math.sin(x*5.7+seed*13.1)*Math.cos(z*4.3+seed*7.7)*Math.sin(y*6.1+seed*3.3);
+    var n2 = Math.sin(x*11.3+seed*17.9)*Math.cos(y*9.7+seed*11.3)*0.5;
+    var n3 = Math.sin(y*15.7+seed*23.3)*Math.cos(z*13.1+seed*19.1)*0.25;
+    var noise = 0.65 + 0.35*(n1 + n2 + n3)/1.75;
+    // 细长型额外拉伸一个轴
+    if (type === 'elong') {
+      noise *= (1.0 + 0.6*Math.abs(nx));
+    }
+    // 随机陨石坑（凹陷）
+    var crater = 1.0;
+    if (Math.random() < 0.15) crater = 0.75;
+    pos.setXYZ(i, x*noise*crater, y*noise*crater, z*noise*crater);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// 通用小行星（火星-木星带穿梭）
+for (var ai=0; ai<12; ai++) {
+  var seed = Math.random()*1000;
+  var size = 0.08 + Math.random()*0.25;
+  var geo = makeRockGeo(size, seed);
+  var hue = 0.06 + Math.random()*0.12;  // 灰棕到暗红
+  var sat = 0.05 + Math.random()*0.25;
+  var lit = 0.20 + Math.random()*0.35;
+  var mat = new THREE.MeshLambertMaterial({color: new THREE.Color().setHSL(hue, sat, lit)});
+  var mesh = new THREE.Mesh(geo, mat);
+  asteroidGroup.add(mesh);
+  
+  var a = 21 + Math.random()*10;
+  var e = 0.10 + Math.random()*0.40;
+  var iAng = (Math.random()-0.5)*0.5;
+  var M0 = Math.random()*Math.PI*2;
+  var T = 120 + Math.random()*350;
+  
+  asteroids.push({
+    mesh: mesh, a: a, e: e, i: iAng, M0: M0, T: T, seed: seed,
+    captured: false, jupOrbit: 0, jupAngle: 0, jupDist: 0
+  });
+}
+
+// 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s
+for (var ai=0; ai<8; ai++) {
+  var seed = Math.random()*2000 + 1000;
+  var size = 0.10 + Math.random()*0.20;
+  var geo = makeRockGeo(size, seed);
+  var hue = 0.03 + Math.random()*0.06;  // 偏红棕
+  var sat = 0.2 + Math.random()*0.4;
+  var lit = 0.25 + Math.random()*0.35;
+  var mat = new THREE.MeshLambertMaterial({color: new THREE.Color().setHSL(hue, sat, lit)});
+  var mesh = new THREE.Mesh(geo, mat);
+  asteroidGroup.add(mesh);
+  
+  var a = 27 + Math.random()*4;
+  var e = 0.30 + Math.random()*0.35;
+  var iAng = (Math.random()-0.5)*0.3;
+  var M0 = Math.random()*Math.PI*2;
+  var T = 30 + Math.random()*60;
+  
+  asteroids.push({
+    mesh: mesh, a: a, e: e, i: iAng, M0: M0, T: T, seed: seed,
+    captured: false, jupOrbit: 0, jupAngle: 0, jupDist: 0
+  });
+}
+
+function solveKepler(M, e) {
+  var E = M;
+  for (var i=0; i<6; i++) { E = E - (E - e*Math.sin(E) - M) / (1 - e*Math.cos(E)); }
+  return E;
+}
+
+function keplerPos(a, e, iAng, M) {
+  var E = solveKepler(M, e);
+  var cosE = Math.cos(E), sinE = Math.sin(E);
+  var x = a*(cosE - e), z = a*Math.sqrt(1 - e*e)*sinE;
+  var cosI = Math.cos(iAng), sinI = Math.sin(iAng);
+  return { x: x, y: z*sinI, z: z*cosI };
+}
+
+function getJupiterPos() {
+  var jm = planetMeshes.find(function(m) { return m.userData.planet.name === 'Jupiter'; });
+  return jm ? jm.position : new THREE.Vector3(28, 0, 0);
+}
+
+console.log('ASTEROID: ' + asteroids.length + ' rocks (12 belt + 8 impact-targeted) + NASA RQ36 STL');
+
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.1);
@@ -676,16 +853,32 @@ function animate(){
     if(c.userData && c.userData.isBelt) c.rotation.y += dt * c.userData.speed;
   });
 
-  // 惯性旋转
+  // 惯性旋转（双模式）
   if(!isDragging && (Math.abs(velTheta)>0.00005 || Math.abs(velPhi)>0.00005)){
-    sph.setFromVector3(camera.position);
-    sph.theta += velTheta;
-    sph.phi   += velPhi;
-    sph.phi = Math.max(0.05, Math.min(Math.PI-0.05, sph.phi));
-    camera.position.setFromSpherical(sph);
+    var s = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+    s.theta += velTheta;
+    s.phi   += velPhi;
+    s.phi = Math.max(0.05, Math.min(Math.PI-0.05, s.phi));
+    var off = new THREE.Vector3().setFromSpherical(s);
+    camera.position.copy(focusTarget).add(off);
     centerView();
     velTheta *= 0.985;
     velPhi   *= 0.985;
+  }
+
+  // 主屏：相机跟随焦点星球
+  if (IS_MAIN_SCREEN && FOCUS_PLANET) {
+    if (FOCUS_PLANET === 'Sun') {
+      focusTarget.set(0, 0, 0);
+    } else {
+      var fm = planetMeshes.find(function(m) { return m.userData.planet.name === FOCUS_PLANET; });
+      if (fm) focusTarget.copy(fm.position);
+    }
+    var s2 = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+    s2.radius = Math.max(1.5, Math.min(30, s2.radius));
+    var off2 = new THREE.Vector3().setFromSpherical(s2);
+    camera.position.copy(focusTarget).add(off2);
+    centerView();
   }
 
   planetMeshes.forEach(mesh=>{
@@ -709,6 +902,306 @@ function animate(){
     const pm = planetMeshes.find(m => m.userData.planet.name === pName);
     if(pm) ring.position.copy(pm.position);
   });
+
+  // -- Asteroid transit + Jupiter capture update --
+  var jupPos = getJupiterPos();
+  var elapsed = performance.now()*0.001;
+  asteroids.forEach(function(ast) {
+    if (ast.captured) {
+      // Captured: orbit Jupiter with fast decay + impact flash
+      ast.jupAngle += dt * (2*Math.PI) / 8;   // faster orbit
+      ast.jupDist -= dt * 0.08;               // faster decay (impact in ~15s)
+      if (ast.jupDist < 2.2) {
+        // ===== NUCLEAR-LEVEL IMPACT: Fireball + Shockwave + Crater + Ejecta =====
+        // References: WebGL Explosion VFX, EasyCraterSim, FireExplosionShader
+        var impactPos = ast.mesh.position.clone();
+        var toJup = impactPos.clone().sub(jupPos).normalize();
+        var surfPt = jupPos.clone().add(toJup.clone().multiplyScalar(2.15));
+        var up = toJup.clone();  // local "up" direction from Jupiter center
+        
+        // 1. Nuclear Fireball (custom shader: noise-displaced sphere + thermal gradient)
+        var fbGeo = new THREE.SphereGeometry(0.3, 24, 24);
+        var fbVert = [
+          'varying vec3 vPos; varying vec3 vNorm;',
+          'uniform float uTime;',
+          'float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}',
+          'float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);',
+          'return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),',
+          'mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}',
+          'void main(){',
+          'vec3 pos=position;',
+          'float n=noise(pos*4.0+uTime*2.0)*0.3+noise(pos*8.0-uTime*1.5)*0.15;',
+          'pos+=normal*n;',
+          'gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);',
+          'vPos=pos; vNorm=normal;}'
+        ].join('\n');
+        var fbFrag = [
+          'varying vec3 vPos; varying vec3 vNorm;',
+          'uniform float uTime; uniform float uAlpha;',
+          'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+          'float fbm(vec2 p){float v=0.0,a=0.5;vec2 s=vec2(1.0);',
+          'for(int i=0;i<3;i++){v+=a*hash(p*s);a*=0.5;s*=2.1;}return v;}',
+          'void main(){',
+          'float d=length(vPos)/0.3;',
+          'float n=fbm(vPos.xy*3.0+uTime*0.5)*0.5+fbm(vPos.yz*5.0-uTime*0.3)*0.3;',
+          'float alpha=exp(-d*d*2.5)*(1.0-smoothstep(0.0,1.0,d))*uAlpha;',
+          'alpha+=n*0.3*alpha;',
+          'vec3 col=mix(vec3(1.0,0.95,0.8),mix(vec3(1.0,0.5,0.05),vec3(0.15,0.02,0.0),d),d);',
+          'col+=n*vec3(0.3,0.15,0.0);',
+          'gl_FragColor=vec4(col,alpha);}'
+        ].join('\n');
+        var fbUnis = {uTime:{value:0}, uAlpha:{value:1.0}};
+        var fbMat = new THREE.ShaderMaterial({
+          vertexShader:fbVert, fragmentShader:fbFrag, uniforms:fbUnis,
+          blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
+        });
+        var fireball = new THREE.Mesh(fbGeo, fbMat);
+        fireball.position.copy(surfPt);
+        fireball.renderOrder = 999;
+        fireball.userData = {life:5.0, age:0, type:'fireball', matRef:fbMat};
+        scene.add(fireball);
+        impactEffects.push(fireball);
+        
+        // 2. Shockwave Ring (expanding torus)
+        var swGeo = new THREE.TorusGeometry(0.15, 0.04, 16, 32);
+        var swMat = new THREE.MeshBasicMaterial({
+          color:0xffffff, transparent:true, opacity:0.9,
+          depthTest:false, depthWrite:false, blending:THREE.AdditiveBlending
+        });
+        var shockwave = new THREE.Mesh(swGeo, swMat);
+        shockwave.position.copy(surfPt);
+        shockwave.lookAt(jupPos);
+        shockwave.renderOrder = 998;
+        shockwave.userData = {life:3.0, age:0, type:'shockwave'};
+        scene.add(shockwave);
+        impactEffects.push(shockwave);
+        
+        // 3. Impact Crater Decal (geodesic patch on Jupiter surface)
+        var craterPatch = (function() {
+          // Create a small patch of Jupiter's surface with crater deformation
+          var R = 2.0;  // Jupiter radius
+          var craterDia = 0.4 + Math.random()*0.4;
+          var craterDepth = craterDia * 0.18;
+          var rimHeight = craterDia * 0.04;
+          var segments = 16;
+          var patchGeo = new THREE.BufferGeometry();
+          var verts = [], indices = [];
+          var cx = 0, cy = R, cz = 0;  // North pole of the patch
+          // We'll create a disc and then project onto sphere
+          for (var ri=0; ri<=segments; ri++) {
+            for (var ai=0; ai<=segments*2; ai++) {
+              var r = (ri/segments) * craterDia * 0.8;
+              var a = (ai/(segments*2)) * Math.PI * 2;
+              var px = Math.cos(a) * r;
+              var pz = Math.sin(a) * r;
+              // Crater profile (EasyCraterSim model)
+              var dist = r / (craterDia*0.8);
+              var h = 0;
+              if (dist < 0.3) h = -craterDepth * (1.0 - dist/0.3);  // deep bowl
+              else if (dist < 0.6) h = -craterDepth * (1.0 - dist/0.3) * (1.0 - (dist-0.3)/0.3);  // transition
+              else if (dist < 1.0) h = rimHeight * (dist-0.6)/0.4;  // raised rim
+              // Project disc point onto sphere surface
+              var sx = px, sy = R + h, sz = pz;
+              var sl = Math.sqrt(sx*sx + sy*sy + sz*sz);
+              verts.push(sx/sl*R, sy/sl*R, sz/sl*R);
+            }
+          }
+          for (var ri=0; ri<segments; ri++) {
+            for (var ai=0; ai<segments*2; ai++) {
+              var a = ri*(segments*2+1)+ai, b = a+1, c = a+(segments*2+1), d = c+1;
+              indices.push(a,b,d, a,d,c);
+            }
+          }
+          patchGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+          patchGeo.setIndex(indices);
+          patchGeo.computeVertexNormals();
+          var patchMat = new THREE.MeshPhongMaterial({
+            color:0x221100, emissive:0x110000, emissiveIntensity:0.5,
+            shininess:0, flatShading:false, depthTest:true, depthWrite:true,
+            transparent:true, opacity:1.0
+          });
+          var patch = new THREE.Mesh(patchGeo, patchMat);
+          patch.position.copy(surfPt);
+          patch.lookAt(jupPos);
+          patch.renderOrder = 1;
+          patch.userData = {life:60, age:0, type:'crater'};
+          scene.add(patch);
+          impactEffects.push(patch);
+          return patch;
+        })();
+        
+        // 4. Ejecta Plume (physics-based ballistic particles)
+        for (var ei=0; ei<80; ei++) {
+          var eSize = 0.02 + Math.random()*0.10;
+          var eGeo = new THREE.SphereGeometry(eSize, 4, 4);
+          var hue = 0.06 + Math.random()*0.10;  // yellow→red
+          var eMat = new THREE.MeshBasicMaterial({
+            color:new THREE.Color().setHSL(hue, 1, 0.5+Math.random()*0.5),
+            transparent:true, opacity:1, depthTest:false, depthWrite:false,
+            blending:THREE.AdditiveBlending
+          });
+          var ejecta = new THREE.Mesh(eGeo, eMat);
+          ejecta.position.copy(surfPt);
+          ejecta.renderOrder = 997;
+          // Ballistic velocity: outward + upward (relative to Jupiter surface)
+          var outDir = toJup.clone();
+          var tanDir = new THREE.Vector3(-outDir.z, 0, outDir.x).normalize();
+          var tanDir2 = new THREE.Vector3().crossVectors(outDir, tanDir).normalize();
+          var angle = Math.random()*Math.PI*2;
+          var elev = Math.random()*Math.PI*0.45;  // 0-45° elevation
+          var speed = 0.8 + Math.random()*5.0;
+          var vel = outDir.clone().multiplyScalar(Math.sin(elev))
+            .add(tanDir.clone().multiplyScalar(Math.cos(angle)*Math.cos(elev)))
+            .add(tanDir2.clone().multiplyScalar(Math.sin(angle)*Math.cos(elev)))
+            .normalize().multiplyScalar(speed);
+          ejecta.userData = {life:3+Math.random()*8, age:0, type:'ejecta', vel:vel};
+          scene.add(ejecta);
+          impactEffects.push(ejecta);
+        }
+        
+        // 5. Thermal glow particles (slow-rising, long-lasting)
+        for (var ti=0; ti<40; ti++) {
+          var tGeo = new THREE.SphereGeometry(0.03+Math.random()*0.05, 4, 4);
+          var tMat = new THREE.MeshBasicMaterial({
+            color:new THREE.Color().setHSL(0.08, 0.8, 0.6+Math.random()*0.4),
+            transparent:true, opacity:1, depthTest:false, depthWrite:false,
+            blending:THREE.AdditiveBlending
+          });
+          var therm = new THREE.Mesh(tGeo, tMat);
+          therm.position.copy(surfPt);
+          therm.renderOrder = 996;
+          var thermVel = toJup.clone().multiplyScalar(0.3+Math.random()*1.5)
+            .add(new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8));
+          therm.userData = {life:5+Math.random()*15, age:0, type:'thermal', vel:thermVel};
+          scene.add(therm);
+          impactEffects.push(therm);
+        }
+        
+        console.log('NUCLEAR IMPACT: fireball+shockwave+crater+80ejecta+40thermal');
+        
+        // Reset asteroid
+        ast.captured = false;
+        ast.a = 27 + Math.random()*4;
+        ast.e = 0.30 + Math.random()*0.35;
+        ast.M0 = Math.random()*Math.PI*2;
+        ast.T = 30 + Math.random()*60;
+        ast.mesh.material = new THREE.MeshLambertMaterial({color: new THREE.Color().setHSL(0.06+Math.random()*0.04, 0.3, 0.3+Math.random()*0.4)});
+        ast.mesh.material.transparent = false;
+        // Hide asteroid (it "disintegrated")
+        ast.mesh.visible = false;
+        setTimeout(function() { if (ast.mesh) ast.mesh.visible = true; }, 1500);
+        console.log('IMPACT: Fireball + ejecta + crater at Jupiter surface!');
+      }
+      ast.mesh.position.set(
+        jupPos.x + Math.cos(ast.jupAngle)*ast.jupDist,
+        jupPos.y + Math.sin(ast.jupAngle)*ast.jupDist*0.4,
+        jupPos.z + Math.cos(ast.jupAngle+1.5)*ast.jupDist*0.5
+      );
+      ast.mesh.rotation.y += dt * 3.0;
+      ast.mesh.rotation.x += dt * 1.5;
+    } else {
+      // Free orbit around Sun with Jupiter perturbation
+      var M = ast.M0 + 2*Math.PI*elapsed/ast.T;
+      var pos = keplerPos(ast.a, ast.e, ast.i, M);
+      ast.mesh.position.set(pos.x, pos.y, pos.z);
+      ast.mesh.rotation.y += dt * 0.3;
+      ast.mesh.rotation.x += dt * 0.2;
+      
+      // Jupiter perturbation: simplified gravity tug
+      var dx = jupPos.x - pos.x, dy = jupPos.y - pos.y, dz = jupPos.z - pos.z;
+      var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      if (dist < CAPTURE_RADIUS) {
+        // Pull toward Jupiter
+        var force = 0.8 / (dist*dist + 0.5);
+        ast.mesh.position.x += dx/dist * force * dt;
+        ast.mesh.position.y += dy/dist * force * dt;
+        ast.mesh.position.z += dz/dist * force * dt;
+        
+        // Capture check: close enough to Jupiter
+        if (dist < CAPTURE_THRESHOLD) {
+          ast.captured = true;
+          ast.jupDist = dist;
+          ast.jupAngle = Math.atan2(dz, dx);
+          ast.mesh.material = new THREE.MeshBasicMaterial({
+            color: 0xff8844,
+            transparent: true, opacity: 0.9
+          });
+          console.log('ASTEROID: Captured by Jupiter! dist='+dist.toFixed(1));
+        }
+      }
+    }
+  });
+  
+  // -- Impact effects processing (fireball, shockwave, crater, ejecta, thermal) --
+  for (var ei=impactEffects.length-1; ei>=0; ei--) {
+    var obj = impactEffects[ei];
+    obj.userData.age += dt;
+    var t = obj.userData.type;
+    var a = obj.userData.age;
+    var l = obj.userData.life;
+    var progress = Math.min(a / l, 1.0);
+    
+    if (t === 'fireball') {
+      // Nuclear fireball: expand with noise, fade
+      var s = 0.3 + progress * progress * 10;  // accelerating expansion
+      obj.scale.set(s, s, s);
+      obj.userData.matRef.uniforms.uTime.value = a;
+      obj.userData.matRef.uniforms.uAlpha.value = progress < 0.15 ? 1.0 : Math.max(0, 1.0 - (progress-0.15)*(progress-0.15)*1.4);
+    } else if (t === 'shockwave') {
+      // Expanding ring: starts slow, accelerates, fades
+      var swS = 0.5 + progress * progress * 15;
+      obj.scale.set(swS, swS, swS);
+      obj.material.opacity = progress < 0.1 ? 1.0 : Math.max(0, (1.0 - progress) * 1.2);
+      obj.material.color.setHSL(0.08, 0.5, 1.0 - progress);
+    } else if (t === 'crater') {
+      // Crater stays visible, slowly darkens
+      if (a > 30 && a < 60) {
+        obj.material.emissiveIntensity = Math.max(0, 0.5 - (a-30)/60);
+      }
+      if (progress >= 1.0) {
+        obj.material.opacity = 0.3;  // never fully disappear, leave a scar
+        continue;  // don't remove
+      }
+    } else if (t === 'ejecta') {
+      // Ballistic ejecta: fly outward, gravity pulls toward Jupiter
+      obj.position.x += obj.userData.vel.x * dt;
+      obj.position.y += obj.userData.vel.y * dt;
+      obj.position.z += obj.userData.vel.z * dt;
+      // Gravity toward Jupiter
+      var toCenter = jupPos.clone().sub(obj.position);
+      var gDist = toCenter.length();
+      if (gDist > 0.01) {
+        toCenter.normalize().multiplyScalar(0.5 * dt / (gDist*gDist + 1.0));
+        obj.userData.vel.add(toCenter);
+      }
+      obj.userData.vel.multiplyScalar(0.995);
+      obj.material.opacity = Math.max(0, 1.0 - progress*progress);
+      obj.scale.multiplyScalar(0.998);
+      obj.material.color.setHSL(0.06+progress*0.06, 1, 1-progress*0.7);
+    } else if (t === 'thermal') {
+      // Thermal glow: rise slowly, expand, fade
+      obj.position.x += obj.userData.vel.x * dt;
+      obj.position.y += obj.userData.vel.y * dt;
+      obj.position.z += obj.userData.vel.z * dt;
+      obj.userData.vel.multiplyScalar(0.99);
+      var thS = 1 + progress * 4;
+      obj.scale.set(thS, thS, thS);
+      obj.material.opacity = Math.max(0, (1.0 - progress) * 0.7);
+      obj.material.color.setHSL(0.08, 0.6, 1-progress*0.5);
+    }
+    
+    if (progress >= 1.0 && t !== 'crater') {
+      scene.remove(obj);
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+      impactEffects.splice(ei, 1);
+    }
+  }
+  // Keep at most 200 effects to prevent memory leak
+  while (impactEffects.length > 200) {
+    var old = impactEffects.shift();
+    try { scene.remove(old); if(old.geometry)old.geometry.dispose(); if(old.material)old.material.dispose(); } catch(e) {}
+  }
   
   // -- Solar storm alpha update --
   if(typeof fMat==='undefined')console.log("PARTICLES: fMat undefined");

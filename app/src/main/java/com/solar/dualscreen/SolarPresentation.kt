@@ -45,6 +45,16 @@ class SolarPresentation : AppCompatActivity() {
                     // SSS textures: 优先从 assets 读取
                     if (url.contains("solarsystemscope.com/textures/download/")) {
                         val filename = url.substringAfterLast('/')
+                        // NASA 纹理走 assets/textures/nasa/
+                        if (url.contains("/nasa/")) {
+                            try {
+                                val decodedName = java.net.URLDecoder.decode(filename, "UTF-8")
+                                val bytes = assets.open("textures/nasa/$decodedName").readBytes()
+                                Log.i(TAG, "Serving NASA: $decodedName (${bytes.size/1024}KB)")
+                                return WebResourceResponse("image/jpeg", "binary", 200, "OK",
+                                    mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(bytes))
+                            } catch (_: Exception) {}
+                        }
                         // 优先 assets (预编译离线可用)
                         try {
                             val assetBytes = assets.open("textures/$filename").readBytes()
@@ -88,6 +98,26 @@ class SolarPresentation : AppCompatActivity() {
                             Log.w(TAG, "Albers texture not found: $filename")
                         }
                     }
+                    // NASA moon textures: http://local.nasa/filename.jpg → assets/textures/nasa/
+                    if (url.startsWith("http://local.nasa/")) {
+                        val filename = url.substringAfterLast('/')
+                        try {
+                            val bytes = assets.open("textures/nasa/$filename").readBytes()
+                            Log.i(TAG, "Serving NASA: $filename (${bytes.size/1024}KB)")
+                            return WebResourceResponse("image/jpeg", "binary", 200, "OK",
+                                mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(bytes))
+                        } catch (_: Exception) {}
+                    }
+                    // NASA moon textures: serve from local assets for offline use
+                    if (url.contains("raw.githubusercontent.com/nasa/NASA-3D-Resources")) {
+                        val filename = url.substringAfterLast('/')
+                        try {
+                            val bytes = assets.open("textures/nasa/$filename").readBytes()
+                            Log.i(TAG, "Serving NASA texture: $filename (${bytes.size/1024}KB)")
+                            return WebResourceResponse("image/jpeg", "binary", 200, "OK",
+                                mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(bytes))
+                        } catch (_: Exception) {}
+                    }
                     // STL 3D models: http://local.stl/filename.stl
                     if (url.startsWith("http://local.stl/")) {
                         val filename = url.removePrefix("http://local.stl/")
@@ -104,8 +134,11 @@ class SolarPresentation : AppCompatActivity() {
                 }
             }
             addJavascriptInterface(AndroidBridge(), "Android")
+            isFocusable = true
+            isFocusableInTouchMode = true
         }
         webView.loadUrl("file:///android_asset/solar.html")
+        webView.requestFocus()
         setContentView(webView)
         SolarState.solarPresentation = this
     }
