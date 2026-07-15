@@ -721,7 +721,7 @@ randomBlueSpot();randomYellowSpot();
 }catch(e){console.log("PARTICLES ERROR: "+e.message+" at line "+e.lineNumber);}
 
 // ===== Asteroid Transit & Jupiter Capture System =====
-// 使用 STL 3D 模型 + 程序化几何体，Phong 材质固有色
+// 使用 STL 3D 模型，与 planets[] 中已验证的加载方式一致
 
 var asteroidGroup = new THREE.Group(); scene.add(asteroidGroup);
 var CAPTURE_RADIUS = 12.0;
@@ -729,71 +729,106 @@ var CAPTURE_THRESHOLD = 5.0;
 var asteroids = [];
 var impactEffects = [];
 
-// 岩石色板 (模仿真实小行星颜色)
+// 岩石色板
 var rockColors = [0x888888,0x998877,0x776655,0x887766,0x999999,0xaa9977,0x665544,0x778899,0x997766,0x887788,
                   0x666666,0x554433,0x777777,0x887755,0x998866,0x445566,0x776644,0x8899aa,0x998877,0x555544];
 
-function makeRockGeo(size, seed) {
-  // SphereGeometry 16x8 + 轻微径向扰动
-  var geo = new THREE.SphereGeometry(size, 16, 8);
-  var pos = geo.attributes.position;
-  for (var i = 0; i < pos.count; i++) {
-    var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-    var dist = Math.sqrt(x*x + y*y + z*z);
-    if (dist < 0.001) continue;
-    // 轻微不规则变形，范围 0.85~1.12
-    var r = 1.0 + 0.12 * Math.sin(x*3.7+seed*1.3) * Math.cos(z*2.9+seed*3.7) * Math.sin(y*4.1+seed*5.3);
-    pos.setXYZ(i, x*r, y*r, z*r);
-  }
-  geo.computeVertexNormals();
-  return geo;
-}
+// 6个真实STL小行星模型路径（已验证在设备上正常3D渲染）
+var STL_MODELS = [
+  'models/bennu.stl',
+  'models/eros.stl', 
+  'models/toutatis.stl',
+  'models/geographos.stl',
+  'models/kleopatra.stl',
+  'models/asteroid_rq36.stl'
+];
 
-// 通用小行星（火星-木星带穿梭）
+// 通用小行星（火星-木星带穿梭）— 使用STL真实模型
 for (var ai=0; ai<12; ai++) {
-  var seed = Math.random()*1000;
-  var size = 0.25 + Math.random()*0.35;
-  var geo = makeRockGeo(size, seed);
-  var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
-  var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
-  var mesh = new THREE.Mesh(geo, mat);
-  asteroidGroup.add(mesh);
-  
+  var modelPath = STL_MODELS[ai % STL_MODELS.length];
+  var size = 0.3 + Math.random()*0.5;
   var a = 21 + Math.random()*10;
   var e = 0.10 + Math.random()*0.40;
   var iAng = (Math.random()-0.5)*0.5;
   var M0 = Math.random()*Math.PI*2;
   var T = 120 + Math.random()*350;
+  var seed = Math.random()*1000;
+  
+  // 先用简单球体占位
+  var geo = new THREE.SphereGeometry(size, 8, 5);
+  var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
+  var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
+  var mesh = new THREE.Mesh(geo, mat);
+  asteroidGroup.add(mesh);
   
   asteroids.push({
     mesh:mesh, a:a, e:e, i:iAng, M0:M0, T:T, seed:seed,
     captured:false, jupOrbit:0, jupAngle:0, jupDist:0
   });
+  
+  // 异步加载真实STL模型替换占位球
+  (function(mesh, modelPath, size, ai){
+    loadSTLModel(modelPath, rockColors[ai%rockColors.length], size, function(stlMesh){
+      if(stlMesh){
+        var box = new THREE.Box3().setFromObject(stlMesh);
+        var sz = box.getSize(new THREE.Vector3());
+        var maxDim = Math.max(sz.x, sz.y, sz.z);
+        if(maxDim>0) stlMesh.scale.setScalar(size*1.0/maxDim);
+        stlMesh.position.copy(mesh.position);
+        stlMesh.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+        asteroidGroup.remove(mesh);
+        asteroidGroup.add(stlMesh);
+        // 更新引用
+        for(var k=0; k<asteroids.length; k++){
+          if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
+        }
+      }
+    });
+  })(mesh, modelPath, size, ai);
 }
 
-// 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s
+// 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s — 使用STL模型
 for (var ai=0; ai<8; ai++) {
-  var seed = Math.random()*2000 + 1000;
-  var size = 0.20 + Math.random()*0.30;
-  var geo = makeRockGeo(size, seed);
-  var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
-  var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
-  var mesh = new THREE.Mesh(geo, mat);
-  asteroidGroup.add(mesh);
-  
+  var modelPath = STL_MODELS[(ai+2) % STL_MODELS.length];
+  var size = 0.25 + Math.random()*0.4;
   var a = 27 + Math.random()*4;
   var e = 0.30 + Math.random()*0.35;
   var iAng = (Math.random()-0.5)*0.3;
   var M0 = Math.random()*Math.PI*2;
   var T = 30 + Math.random()*60;
+  var seed = Math.random()*2000+1000;
+  
+  var geo = new THREE.SphereGeometry(size, 8, 5);
+  var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
+  var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
+  var mesh = new THREE.Mesh(geo, mat);
+  asteroidGroup.add(mesh);
   
   asteroids.push({
     mesh:mesh, a:a, e:e, i:iAng, M0:M0, T:T, seed:seed,
     captured:false, jupOrbit:0, jupAngle:0, jupDist:0
   });
+  
+  (function(mesh, modelPath, size, ai){
+    loadSTLModel(modelPath, rockColors[(ai+8)%rockColors.length], size, function(stlMesh){
+      if(stlMesh){
+        var box = new THREE.Box3().setFromObject(stlMesh);
+        var sz = box.getSize(new THREE.Vector3());
+        var maxDim = Math.max(sz.x, sz.y, sz.z);
+        if(maxDim>0) stlMesh.scale.setScalar(size*1.0/maxDim);
+        stlMesh.position.copy(mesh.position);
+        stlMesh.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+        asteroidGroup.remove(mesh);
+        asteroidGroup.add(stlMesh);
+        for(var k=0; k<asteroids.length; k++){
+          if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
+        }
+      }
+    });
+  })(mesh, modelPath, size, ai);
 }
 
-console.log('ASTEROID: '+asteroids.length+' rocky bodies (12 belt + 8 impact) — 20 unique colors');
+console.log('ASTEROID: '+asteroids.length+' STL-model rocks (12 belt + 8 impact) — 6 unique shapes');
 
 function solveKepler(M, e) {
   var E = M;
