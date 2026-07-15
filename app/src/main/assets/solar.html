@@ -505,7 +505,27 @@ planets.forEach((p,i)=>{
 });
 
 // 主屏初始状态：只显示焦点星球
-if (IS_MAIN_SCREEN) updateMainScreenVisibility();
+if (IS_MAIN_SCREEN) {
+  updateMainScreenVisibility();
+
+  // 初始化焦点：将相机对准默认焦点星球（木星），拉近镜头
+  if (FOCUS_PLANET && FOCUS_PLANET !== 'Sun') {
+    var initMesh = planetMeshes.find(function(m) { return m.userData.planet.name === FOCUS_PLANET; });
+    if (initMesh) {
+      focusTarget.copy(initMesh.position);
+      var initSize = initMesh.userData.planet.size || 1.0;
+      focusDistance = initSize * 1.0;  // 更近距离，木星大一倍
+      focusDistance = Math.max(1.5, Math.min(30, focusDistance));
+      var initSph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(focusTarget));
+      initSph.radius = focusDistance;
+      var initOff = new THREE.Vector3().setFromSpherical(initSph);
+      camera.position.copy(focusTarget).add(initOff);
+      centerView();
+      // 显示信息卡片
+      setTimeout(function() { showInfoCard(FOCUS_PLANET); }, 200);
+    }
+  }
+}
 
 
 // ============ FPS ============
@@ -724,7 +744,7 @@ function onSelectPlanet(name) {
       var fm = planetMeshes.find(function(m) { return m.userData.planet.name === name; });
       if (fm) {
         focusTarget.copy(fm.position);
-        focusDistance = (fm.userData.planet.size || 1.0) * 2.0;
+        focusDistance = (fm.userData.planet.size || 1.0) * 1.0;  // 更近视角，星球更大
         focusDistance = Math.max(1.5, Math.min(30, focusDistance));
       }
     }
