@@ -760,7 +760,7 @@ for (var ai=0; ai<12; ai++) {
   var size = 0.08 + Math.random()*0.25;
   var geo = makeRockGeo(size, seed);
   var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
-  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2, flatShading:true});
+  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2});
   var mesh = new THREE.Mesh(geo, mat);
   asteroidGroup.add(mesh);
   
@@ -782,7 +782,7 @@ for (var ai=0; ai<8; ai++) {
   var size = 0.10 + Math.random()*0.20;
   var geo = makeRockGeo(size, seed);
   var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
-  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2, flatShading:true});
+  var mat = new THREE.MeshPhongMaterial({color:rockColors[colorIdx], shininess:2});
   var mesh = new THREE.Mesh(geo, mat);
   asteroidGroup.add(mesh);
   
