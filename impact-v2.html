@@ -1,0 +1,208 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Jupiter Impact - Gravitational Waves</title>
+<style>*{margin:0;padding:0}body{background:#000;overflow:hidden;font-family:monospace}canvas{display:block}
+#info{position:fixed;top:10px;left:10px;color:#aaa;font-size:12px;pointer-events:none;z-index:99;background:rgba(0,0,0,0.6);padding:4px 8px;border-radius:4px}
+#btns{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100}
+button{padding:10px 22px;margin:0 4px;font-size:13px;border:1px solid #555;background:#1a1a1a;color:#ccc;border-radius:5px;cursor:pointer}
+button:hover{background:#333}button.impact{background:#831;border-color:#c52;font-size:16px;padding:12px 28px}</style></head>
+<body>
+<div id="info">Gravitational Waves + Impact Crater | Drag:rotate Scroll:zoom</div>
+<div id="btns"><button class="impact" onclick="doImpact()">💥 IMPACT</button><button onclick="doImpactLarge()">Massive</button></div>
+<script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
+<script>
+// ==== ALL VARS ====
+var JR=2.0, scene,cam,renderer,flashL,jupiter,particles,pGeo,pPos,pVel,pLife,pSize,pColor,pMat,nextParticle=0;
+var fireballs=[], gravWaves=[], craters=[], impactN=0, clock, autoTimer=5, MAX_P=5000;
+var dragging=false,px=0,py=0,sph;
+
+scene=new THREE.Scene(); scene.background=new THREE.Color(0x000010);
+cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,200);
+cam.position.set(3,2,8);cam.lookAt(0,0,0);
+renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));document.body.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0x112233,0.3));
+var sunL=new THREE.DirectionalLight(0xffeedd,1.5);sunL.position.set(8,5,6);scene.add(sunL);
+flashL=new THREE.PointLight(0xff8844,0,50,1.5);flashL.position.set(0,2,0);scene.add(flashL);
+
+// Stars
+var sv=[];for(var i=0;i<2000;i++){sv.push((Math.random()-0.5)*80,(Math.random()-0.5)*50,(Math.random()-0.5)*40);}
+var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
+scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x555577,size:0.06,sizeAttenuation:true})));
+
+// Jupiter
+var jc=document.createElement('canvas');jc.width=1024;jc.height=512;var jx=jc.getContext('2d');
+for(var y=0;y<512;y++){var t=y/512;jx.fillStyle='rgb('+(180+Math.sin(t*20)*30+Math.sin(t*8)*15|0)+','+(150+Math.sin(t*15)*20|0)+','+(100+Math.sin(t*10)*15|0)+')';jx.fillRect(0,y,1024,1);}
+for(var b=0;b<30;b++){var by=30+Math.random()*452,bh=4+Math.random()*28;jx.fillStyle='rgba('+(170+Math.random()*60|0)+','+(120+Math.random()*45|0)+','+(70+Math.random()*35|0)+','+(0.04+Math.random()*0.16)+')';jx.fillRect(0,by,1024,bh);}
+var grs=jx.createRadialGradient(480,270,0,480,270,38);grs.addColorStop(0,'rgba(210,110,55,0.55)');grs.addColorStop(0.4,'rgba(185,85,45,0.35)');grs.addColorStop(1,'rgba(0,0,0,0)');jx.fillStyle=grs;jx.fillRect(440,230,80,80);
+var jTex=new THREE.CanvasTexture(jc);jTex.colorSpace=THREE.SRGBColorSpace;
+jupiter=new THREE.Mesh(new THREE.SphereGeometry(JR,64,48),new THREE.MeshStandardMaterial({map:jTex,roughness:0.65}));scene.add(jupiter);
+
+// Camera controls
+sph=new THREE.Spherical(7,Math.PI*0.35,0);cam.position.setFromSpherical(sph);cam.lookAt(0,0,0);
+renderer.domElement.addEventListener('pointerdown',function(e){dragging=true;px=e.clientX;py=e.clientY;});
+renderer.domElement.addEventListener('pointermove',function(e){if(!dragging)return;sph.theta-=(e.clientX-px)*0.005;sph.phi-=(e.clientY-py)*0.005;sph.phi=Math.max(0.08,Math.min(Math.PI-0.08,sph.phi));cam.position.setFromSpherical(sph);cam.lookAt(0,0,0);px=e.clientX;py=e.clientY;});
+window.addEventListener('pointerup',function(){dragging=false;});
+renderer.domElement.addEventListener('wheel',function(e){sph.radius+=e.deltaY*0.01;sph.radius=Math.max(2.5,Math.min(30,sph.radius));cam.position.setFromSpherical(sph);cam.lookAt(0,0,0);});
+
+// GPU Particles
+pGeo=new THREE.BufferGeometry();pPos=new Float32Array(MAX_P*3);pVel=new Float32Array(MAX_P*3);pLife=new Float32Array(MAX_P);pSize=new Float32Array(MAX_P);pColor=new Float32Array(MAX_P*3);
+for(var i=0;i<MAX_P;i++){pLife[i]=-1;pSize[i]=0.03;}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));pGeo.setAttribute('aSize',new THREE.BufferAttribute(pSize,1));pGeo.setAttribute('aColor',new THREE.BufferAttribute(pColor,3));
+var pVert='attribute float aSize;attribute vec3 aColor;varying vec3 vCol;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=aSize*300.0/-mv.z;vCol=aColor;}';
+var pFrag='varying vec3 vCol;void main(){float d=length(gl_PointCoord-0.5)*2.0;float a=exp(-d*d*3.0);gl_FragColor=vec4(vCol,a);}';
+pMat=new THREE.ShaderMaterial({vertexShader:pVert,fragmentShader:pFrag,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
+particles=new THREE.Points(pGeo,pMat);particles.frustumCulled=false;particles.renderOrder=990;scene.add(particles);
+
+// Noise GLSL
+var nglsl='float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}float fbm(vec3 p){float v=0.0,a=0.5;vec3 s=vec3(1.0);for(int i=0;i<5;i++){v+=a*noise(p*s);a*=0.5;s*=2.0;}return v;}';
+
+// ==== EFFECT CREATORS ====
+function spawnParticles(origin,dir,count,power){
+  var tangent=new THREE.Vector3(-dir.z,0,dir.x).normalize();
+  var bitangent=new THREE.Vector3().crossVectors(dir,tangent);
+  for(var i=0;i<count;i++){
+    var idx=nextParticle;nextParticle=(nextParticle+1)%MAX_P;
+    var elev=Math.random()*Math.PI*0.5,azim=Math.random()*Math.PI*2;
+    var speed=power*(0.3+Math.random()*2.5);
+    var v=dir.clone().multiplyScalar(Math.sin(elev)*speed).add(tangent.clone().multiplyScalar(Math.cos(azim)*Math.cos(elev)*speed)).add(bitangent.clone().multiplyScalar(Math.sin(azim)*Math.cos(elev)*speed));
+    pPos[idx*3]=origin.x;pPos[idx*3+1]=origin.y;pPos[idx*3+2]=origin.z;
+    pVel[idx*3]=v.x;pVel[idx*3+1]=v.y;pVel[idx*3+2]=v.z;
+    pLife[idx]=1.5+Math.random()*6*power;pSize[idx]=0.02+Math.random()*0.08*power;
+    var tp=Math.random();pColor[idx*3]=1.0;pColor[idx*3+1]=0.5+tp*0.3;pColor[idx*3+2]=0.05+tp*0.1;
+  }
+  pGeo.attributes.position.needsUpdate=true;pGeo.attributes.aSize.needsUpdate=true;pGeo.attributes.aColor.needsUpdate=true;
+}
+
+function createFireball(pos,power){
+  var group=new THREE.Group();group.position.copy(pos);var fSize=0.25*power;
+  var fGeo=new THREE.SphereGeometry(fSize,32,24);
+  var fVert=nglsl+'varying vec3 vPos;varying vec3 vNorm;varying float vN;uniform float uTime;uniform float uSize;void main(){vec3 pos=position;float n1=fbm(pos*2.5+uTime*1.5)*0.45;float n2=fbm(pos*5.0-uTime*0.8)*0.25;float n3=noise(pos*10.0+uTime*2.0)*0.12;pos+=normal*(n1+n2+n3)*uSize;gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);vPos=pos;vNorm=normal;vN=n1+n2+n3;}';
+  var fFrag=nglsl+'varying vec3 vPos;varying vec3 vNorm;varying float vN;uniform float uTime;uniform float uAlpha;uniform float uSize;void main(){float d=length(vPos)/uSize;float n=fbm(vPos*4.0+uTime*0.6)*0.35;float core=exp(-d*d*8.0);float mid=exp(-d*d*2.0)*(1.0-core)*0.55;float outer=exp(-d*d*0.6)*(1.0-mid-core)*0.2;float a=(core*1.0+mid*0.6+outer*0.25)*uAlpha;a+=n*0.25*uAlpha*(1.0-d);vec3 col=vec3(1.0,0.9,0.7)*core+vec3(1.0,0.4,0.03)*mid+vec3(0.6,0.05,0.01)*outer;col+=n*vec3(0.25,0.1,0.0);gl_FragColor=vec4(col,a);}';
+  var fUnis={uTime:{value:0},uAlpha:{value:1},uSize:{value:fSize}};
+  var fMat=new THREE.ShaderMaterial({vertexShader:fVert,fragmentShader:fFrag,uniforms:fUnis,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
+  var core=new THREE.Mesh(fGeo,fMat);core.renderOrder=999;group.add(core);
+  var gGeo=new THREE.SphereGeometry(fSize*2.2,20,16);
+  var gMat=new THREE.ShaderMaterial({vertexShader:'varying vec3 vP;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;vP=position;}',fragmentShader:'varying vec3 vP;uniform float uA;uniform float uS;void main(){float d=length(vP)/uS;float a=exp(-d*d*0.25)*0.35*uA;gl_FragColor=vec4(vec3(1.0,0.2,0.02),a);}',uniforms:{uA:{value:1},uS:{value:fSize*2.2}},blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
+  var glow=new THREE.Mesh(gGeo,gMat);glow.renderOrder=998;group.add(glow);
+  scene.add(group);
+  fireballs.push({group:group,core:core,glow:glow,fUnis:fUnis,gUnis:gMat.uniforms,size:fSize,age:0,life:5*power,power:power});
+}
+
+function createGravWave(pos,jupCenter,power){
+  // Gravitational waves: expanding SPHERICAL wavefronts into space
+  var domes=[];
+  var gwVert='varying vec3 vWorld; varying vec3 vNorm; void main(){vec4 worldPos=modelMatrix*vec4(position,1.0);vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;vWorld=worldPos.xyz;vNorm=normalize(mat3(modelMatrix)*normal);}';
+  var gwFrag='varying vec3 vWorld; varying vec3 vNorm; uniform float uTime; uniform float uAlpha; uniform float uWaveR;'+
+    'void main(){'+
+    'vec3 viewDir=normalize(cameraPosition-vWorld);'+
+    'float fresnel=pow(1.0-abs(dot(vNorm,viewDir)),2.0);'+
+    'float dist=length(vWorld-vec3(0.0));'+
+    // Thin ring at the expanding wavefront
+    'float ring=exp(-pow((dist-uWaveR)*3.5,2.0));'+
+    // Interference ripples within the ring
+    'float ripple=sin(dist*20.0-uTime*2.5)*0.5+sin(dist*12.0+uTime*1.5)*0.3;'+
+    'float alpha=ring*(0.5+ripple*0.3)*fresnel*uAlpha*0.55;'+
+    'vec3 col=vec3(0.35,0.55,0.9)+ripple*vec3(0.3,0.25,0.15);'+
+    'gl_FragColor=vec4(col,alpha);}';
+  for(var ri=0;ri<4;ri++){
+    var r0=JR*1.15;
+    var geo=new THREE.SphereGeometry(r0,48,36);
+    var mat=new THREE.ShaderMaterial({
+      vertexShader:gwVert,fragmentShader:gwFrag,
+      uniforms:{uTime:{value:0},uAlpha:{value:0.7-ri*0.15},uWaveR:{value:r0}},
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.FrontSide
+    });
+    var dome=new THREE.Mesh(geo,mat);dome.position.copy(jupCenter);
+    dome.renderOrder=996-ri;
+    dome.userData={waveIndex:ri,delay:ri*0.55,matRef:mat};
+    scene.add(dome);domes.push(dome);
+  }
+  gravWaves.push({domes:domes,age:0,life:6*power,power:power});
+}
+
+function createCrater(pos,jupCenter,power){
+  var R=JR;var cd=0.35*power;var segs=28;var verts=[],idxs=[];
+  for(var ri=0;ri<=segs;ri++){for(var ai=0;ai<=segs*2;ai++){
+    var r=(ri/segs)*cd*0.7,a=(ai/(segs*2))*Math.PI*2;
+    var px=Math.cos(a)*r,pz=Math.sin(a)*r,d=r/(cd*0.7);
+    var h=0;
+    if(d<0.25)h=-cd*0.18*(1-d/0.25);
+    else if(d<0.55)h=-cd*0.18*(1-d/0.25)*(1-(d-0.25)/0.3);
+    else if(d<1.0)h=cd*0.03*(d-0.55)/0.45;
+    var sx=px,sy=R+h,sz=pz,sl=Math.sqrt(sx*sx+sy*sy+sz*sz);
+    verts.push(sx/sl*R,sy/sl*R,sz/sl*R);
+  }}
+  for(var ri=0;ri<segs;ri++){for(var ai=0;ai<segs*2;ai++){
+    var a=ri*(segs*2+1)+ai,b=a+1,c=a+(segs*2+1),d=c+1;idxs.push(a,b,d,a,d,c);
+  }}
+  var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geo.setIndex(idxs);geo.computeVertexNormals();
+  var mat=new THREE.MeshStandardMaterial({color:0x150500,roughness:1,metalness:0,emissive:0x030000,emissiveIntensity:0.3,transparent:true,opacity:0,depthWrite:true});
+  var patch=new THREE.Mesh(geo,mat);patch.position.copy(pos);patch.lookAt(jupCenter);patch.renderOrder=0;scene.add(patch);
+  craters.push({patch:patch,age:0,targetOpacity:0.85*power});
+}
+
+// ==== IMPACT TRIGGER ====
+function doImpactAt(x,y,z,power){
+  var pos=new THREE.Vector3(x,y,z).normalize().multiplyScalar(JR*1.03);
+  var dir=pos.clone().normalize();var jupC=new THREE.Vector3(0,0,0);
+  impactN++;console.log('IMPACT #'+impactN+' p='+power.toFixed(1));
+  flashL.position.copy(pos);flashL.intensity=60*power;flashL.color.set(0xffcc88);
+  createFireball(pos,power);
+  createGravWave(pos,jupC,power);
+  createCrater(pos,jupC,power);
+  spawnParticles(pos,dir,Math.floor(100*power),power);
+}
+function doImpact(){var phi=Math.acos(2*Math.random()-1),theta=Math.random()*Math.PI*2;var x=JR*Math.sin(phi)*Math.cos(theta),y=JR*Math.sin(phi)*Math.sin(theta),z=JR*Math.cos(phi);if(z<-0.2){doImpact();return;}doImpactAt(x,y,z,1.0+Math.random()*0.5);}
+function doImpactLarge(){doImpactAt(0,JR*0.5,JR*0.85,2.0);}
+window.doImpact=doImpact;window.doImpactLarge=doImpactLarge;
+
+// ==== UPDATES ====
+function updateParticles(dt){
+  for(var i=0;i<MAX_P;i++){if(pLife[i]<=0)continue;pLife[i]-=dt;
+    pPos[i*3]+=pVel[i*3]*dt;pPos[i*3+1]+=pVel[i*3+1]*dt;pPos[i*3+2]+=pVel[i*3+2]*dt;
+    var dx=-pPos[i*3],dy=-pPos[i*3+1],dz=-pPos[i*3+2],dist=Math.sqrt(dx*dx+dy*dy+dz*dz)+0.01;
+    var gf=2.5*dt/(dist*dist*0.3+1.0);
+    pVel[i*3]+=dx/dist*gf;pVel[i*3+1]+=dy/dist*gf;pVel[i*3+2]+=dz/dist*gf;
+    pVel[i*3]*=0.998;pVel[i*3+1]*=0.998;pVel[i*3+2]*=0.998;
+    var alpha=pLife[i]/7.5;pColor[i*3+1]=alpha*0.6;pColor[i*3+2]=alpha*0.1;
+    if(pLife[i]<=0){pPos[i*3]=pPos[i*3+1]=pPos[i*3+2]=-999;}
+  }pGeo.attributes.position.needsUpdate=true;pGeo.attributes.aColor.needsUpdate=true;
+}
+
+clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);var dt=Math.min(clock.getDelta(),0.1);
+  autoTimer-=dt;if(autoTimer<=0){autoTimer=3+Math.random()*6;doImpact();}
+  updateParticles(dt);
+  // Fireballs
+  for(var fi=fireballs.length-1;fi>=0;fi--){var fb=fireballs[fi];fb.age+=dt;var p=Math.min(fb.age/fb.life,1.0);
+    var sc=1+Math.pow(p,0.5)*7*fb.power;fb.group.scale.setScalar(sc);
+    fb.fUnis.uTime.value=fb.age;fb.fUnis.uAlpha.value=p<0.12?p*8.3:Math.max(0,1-(p-0.12)*(p-0.12)*1.2);
+    fb.gUnis.uA.value=Math.max(0,(1-p*p)*0.45);fb.gUnis.uS.value=fb.size*2.2*sc;
+    if(p>=1){scene.remove(fb.group);fb.group.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});fireballs.splice(fi,1);}
+  }
+  // Gravitational waves - expanding spherical wavefronts
+  for(var gi=gravWaves.length-1;gi>=0;gi--){var gw=gravWaves[gi];gw.age+=dt;var gp=Math.min(gw.age/gw.life,1.0);
+    for(var ri=0;ri<gw.domes.length;ri++){var dm=gw.domes[ri];var rd=gw.age-dm.userData.delay;if(rd<0)continue;
+      var rp=Math.min(rd/(gw.life*0.7),1.0);
+      var waveR=JR*1.15+rp*6*gw.power;  // wavefront expands from Jupiter surface outward
+      dm.userData.matRef.uniforms.uTime.value=gw.age;
+      dm.userData.matRef.uniforms.uWaveR.value=waveR;
+      dm.userData.matRef.uniforms.uAlpha.value=Math.max(0,(0.7-ri*0.15)*(1-rp)*1.2);
+    }
+    if(gp>=1){for(var ri=0;ri<gw.domes.length;ri++){scene.remove(gw.domes[ri]);gw.domes[ri].geometry.dispose();gw.domes[ri].material.dispose();}gravWaves.splice(gi,1);}
+  }
+  // Craters
+  for(var ci=craters.length-1;ci>=0;ci--){var cr=craters[ci];cr.age+=dt;
+    if(cr.age<1.5)cr.patch.material.opacity=Math.min(cr.targetOpacity,cr.age/1.5*cr.targetOpacity);
+    else if(cr.age>60)cr.patch.material.opacity=Math.max(0.15,cr.targetOpacity-(cr.age-60)/180*cr.targetOpacity);
+    if(cr.age>240){scene.remove(cr.patch);cr.patch.geometry.dispose();cr.patch.material.dispose();craters.splice(ci,1);}
+  }
+  flashL.intensity=Math.max(0,flashL.intensity-dt*30);
+  while(fireballs.length>6){var f=fireballs.shift();scene.remove(f.group);}
+  renderer.render(scene,cam);
+}
+animate();
+window.addEventListener('resize',function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+console.log('Gravitational Wave Impact Simulator Ready');
+</script></body></html>

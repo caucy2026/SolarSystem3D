@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jupiter Asteroid Impact — DEMO</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+  canvas { display: block; }
+  
+  #flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: white; opacity: 0; pointer-events: none;
+    transition: opacity 0.05s ease-out;
+    z-index: 10;
+  }
+  #flash.active { opacity: 0.9; transition: opacity 0s; }
+
+  #ui {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 16px; z-index: 20;
+  }
+  #ui button {
+    padding: 14px 32px; border: 2px solid rgba(255,255,255,0.4);
+    background: rgba(20,20,40,0.85); color: #fff;
+    font-size: 16px; border-radius: 30px; cursor: pointer;
+    backdrop-filter: blur(10px); letter-spacing: 1px;
+    transition: all 0.25s;
+  }
+  #ui button:hover {
+    border-color: #ff8c42; background: rgba(255,100,30,0.25);
+    box-shadow: 0 0 30px rgba(255,100,30,0.4);
+  }
+  #ui button.primary {
+    border-color: #ff6a00; background: rgba(255,80,20,0.35);
+    font-size: 20px; padding: 16px 40px;
+  }
+  #ui button.primary:hover {
+    background: rgba(255,60,10,0.55); box-shadow: 0 0 50px rgba(255,80,10,0.7);
+  }
+
+  #info {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.7); font-size: 14px; letter-spacing: 2px;
+    z-index: 20; pointer-events: none;
+  }
+
+  #hint {
+    position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.4); font-size: 12px; letter-spacing: 1px;
+    z-index: 20; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+<div id="info">🪐 JUPITER IMPACT SIMULATION</div>
+<div id="hint">SPACE = Impact &nbsp;|&nbsp; S = Small &nbsp;|&nbsp; R = Reset &nbsp;|&nbsp; Drag to orbit</div>
+<div id="ui">
+  <button onclick="window._reset()">🔄 RESET</button>
+  <button class="primary" onclick="window._impact()">💥 IMPACT!</button>
+  <button onclick="window._small()">✨ SMALL</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ═══════════════════════════════════════
+// SCENE SETUP
+// ═══════════════════════════════════════
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 500);
+camera.position.set(8, 3.5, 12);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 0, 0);
+controls.minDistance = 4;
+controls.maxDistance = 40;
+controls.update();
+
+// ═══════════════════════════════════════
+// STARFIELD
+// ═══════════════════════════════════════
+const starsGeo = new THREE.BufferGeometry();
+const starsCount = 2000;
+const starsPos = new Float32Array(starsCount * 3);
+for (let i = 0; i < starsCount * 3; i += 3) {
+  const r = 80 + Math.random() * 80;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  starsPos[i] = r * Math.sin(phi) * Math.cos(theta);
+  starsPos[i+1] = r * Math.sin(phi) * Math.sin(theta);
+  starsPos[i+2] = r * Math.cos(phi);
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true, opacity: 0.7 });
+scene.add(new THREE.Points(starsGeo, starsMat));
+
+// ═══════════════════════════════════════
+// SIMPLEX NOISE GLSL
+// ═══════════════════════════════════════
+const NOISE_GLSL = /* glsl */ `
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x) { return mod289(((x * 34.0) + 10.0) * x); }
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v) {
+  const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+      i.z + vec4(0.0, i1.z, i2.z, 1.0))
+    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ * ns.x + ns.yyyy;
+  vec4 y = y_ * ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0) * 2.0 + 1.0;
+  vec4 s1 = floor(b1) * 2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.5 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+  m = m * m;
+  return 105.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+}
+
+float fbm(vec3 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * snoise(p); p *= 2.07; a *= 0.5; }
+  return v;
+}
+`;
+
+// ═══════════════════════════════════════
+// JUPITER — Procedural Gas Giant
+// ═══════════════════════════════════════
+const jupiterGeo = new THREE.SphereGeometry(2.0, 128, 96);
+const impPoint = new THREE.Vector3(0, 0.0, 1.95);
+const impNormal = impPoint.clone().normalize();
+
+const jupUniforms = {
+  uTime: { value: 0 },
+  uImpactPt: { value: impNormal.clone() },
+  uCraterR: { value: 0.0 },
+  uCraterDepth: { value: 0.0 },
+  uShockTime: { value: -1.0 },
+  uScarAlpha: { value: 0.0 },
+};
+
+const jupiterMat = new THREE.ShaderMaterial({
+  uniforms: jupUniforms,
+  vertexShader: /* glsl */ `
+    varying vec3 vN, vW, vO;
+    void main() {
+      vO = position;
+      vN = normalize(mat3(modelMatrix) * normal);
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vW = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform float uTime;
+    uniform vec3 uImpactPt;
+    uniform float uCraterR, uCraterDepth, uShockTime, uScarAlpha;
+    varying vec3 vN, vW, vO;
+    ${NOISE_GLSL}
+    void main() {
+      vec3 p = normalize(vO);
+      float warp = fbm(p * 4.5 + uTime * 0.02);
+      float band = p.y * 10.0 + warp * 0.7 + uTime * 0.01;
+      float bp = sin(band * 3.14159) * 0.5 + 0.5;
+      float rock = fbm(p * 6.0 + 3.7) * 0.5 + 0.5;
+      float t = mix(rock, bp, 0.85);
+
+      vec3 A = vec3(0.76, 0.55, 0.35); // tan
+      vec3 B = vec3(0.62, 0.38, 0.20); // brown
+      vec3 C = vec3(0.90, 0.72, 0.48); // cream
+      vec3 D = vec3(0.45, 0.22, 0.10); // dark brown
+      vec3 E = vec3(0.82, 0.42, 0.18); // GRS red
+
+      vec3 base = mix(A, B, smoothstep(0.15, 0.45, t));
+      base = mix(base, C, smoothstep(0.55, 0.75, t));
+      base = mix(base, D, smoothstep(0.85, 0.98, t));
+
+      // Great Red Spot
+      float grsY = smoothstep(0.35, 0.45, p.y) - smoothstep(0.55, 0.65, p.y);
+      float grsX = 1.0 - smoothstep(0.0, 0.35, length(p.xz - vec2(0.45, 0.55)));
+      base = mix(base, E, grsY * grsX * 0.7);
+
+      // ─── CRATER ───
+      float d = length(p - uImpactPt);
+      float cmask = 1.0 - smoothstep(0.0, uCraterR, d);
+      float crim = smoothstep(uCraterR * 0.7, uCraterR, d) * cmask;
+      base = mix(base, vec3(0.06, 0.03, 0.01), cmask * (1.0 - crim) * uCraterDepth * 1.8);
+      base = mix(base, vec3(1.0, 0.65, 0.35), crim * uCraterDepth * 0.55);
+
+      // ─── SHOCK WAVE — sweeping heat front: ring + heated trail ───
+      if (uShockTime > 0.0) {
+        float ringR = uShockTime * 0.7;                   // shock front position (expanding)
+        float fade = exp(-ringR * 0.35);                   // slow fade as it travels far
+        float frontThick = 0.018 + ringR * 0.015;          // front ring width
+        float trailStart = uCraterR + 0.03;                // trail begins at crater edge
+
+        // Heated trail behind the front: from crater to ring position
+        float trail = smoothstep(trailStart, ringR - frontThick, d)
+                    * (1.0 - smoothstep(ringR - frontThick, ringR, d));
+
+        // Shock front: bright moving ring edge
+        float front = (1.0 - smoothstep(0.0, frontThick, abs(d - ringR)));
+
+        // Warm trail left behind the expanding front
+        base = mix(base, vec3(0.95, 0.55, 0.15), trail * fade * 0.25);
+        // Bright moving front
+        base = mix(base, vec3(1.0, 0.88, 0.55), front * fade * 0.6);
+      }
+
+      // ─── PERMANENT SCAR — glowing arc that never disappears ───
+      float scarR = 0.18;
+      float scarThick = 0.04;
+      float scarRing = 1.0 - smoothstep(0.0, scarThick, abs(d - scarR));
+      float arcShape = scarRing * (0.6 + 0.4 * smoothstep(-0.5, 0.5, p.x));
+      base = mix(base, vec3(1.0, 0.5, 0.15), arcShape * uScarAlpha * 0.5);
+
+      // Lighting
+      vec3 N = normalize(vN);
+      vec3 L = normalize(vec3(-2.0, 1.0, 3.0));
+      float diff = max(dot(N, L), 0.0);
+      float amb = 0.06;
+      vec3 V = normalize(cameraPosition - vW);
+      float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+      vec3 col = base * (amb + diff * 1.15);
+      col += vec3(0.12, 0.18, 0.35) * fres * 0.35;
+      col += vec3(1.0, 0.45, 0.12) * cmask * uCraterDepth * (0.3 + 0.7 * fres);
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+const jupiter = new THREE.Mesh(jupiterGeo, jupiterMat);
+jupiter.rotation.y = 0.3;
+scene.add(jupiter);
+
+// ═══════════════════════════════════════
+// ATMOSPHERE GLOW
+// ═══════════════════════════════════════
+const atmoGeo = new THREE.SphereGeometry(2.18, 64, 48);
+const atmoUniforms = {
+  uImpactDepth: { value: 0 },
+  uImpactPt: { value: impNormal.clone() },
+};
+const atmoMat = new THREE.ShaderMaterial({
+  uniforms: atmoUniforms,
+  vertexShader: /* glsl */ `
+    varying vec3 vN, vW, vO;
+    void main() {
+      vO = position;
+      vN = normalize(mat3(modelMatrix) * normal);
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vW = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform float uImpactDepth;
+    uniform vec3 uImpactPt;
+    varying vec3 vN, vW, vO;
+    void main() {
+      vec3 N = normalize(vN);
+      vec3 V = normalize(cameraPosition - vW);
+      float fres = pow(1.0 - max(dot(N, V), 0.0), 3.5);
+      vec3 col = mix(vec3(0.25, 0.18, 0.12), vec3(0.05, 0.08, 0.18), fres);
+      vec3 p = normalize(vO);
+      float d = length(p - uImpactPt);
+      float glow = smoothstep(0.6, 0.05, d) * uImpactDepth;
+      col = mix(col, vec3(1.0, 0.5, 0.18), glow * 0.8);
+      float alpha = fres * (0.22 + uImpactDepth * 0.5);
+      gl_FragColor = vec4(col, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+});
+scene.add(new THREE.Mesh(atmoGeo, atmoMat));
+
+// ═══════════════════════════════════════
+// ASTEROID
+// ═══════════════════════════════════════
+const astGeo = new THREE.IcosahedronGeometry(0.14, 2);
+const posA = astGeo.getAttribute('position');
+for (let i = 0; i < posA.count; i++) {
+  const x = posA.getX(i), y = posA.getY(i), z = posA.getZ(i);
+  const len = Math.sqrt(x*x + y*y + z*z);
+  const n = 1.0 + (Math.random() - 0.5) * 0.45;
+  posA.setXYZ(i, x * n, y * n, z * n);
+}
+astGeo.computeVertexNormals();
+const astMesh = new THREE.Mesh(astGeo, new THREE.MeshStandardMaterial({
+  color: 0x665544, roughness: 0.85, metalness: 0.15,
+}));
+astMesh.position.set(3, 0.3, 9);
+astMesh.visible = true;
+astMesh.userData = {
+  start: new THREE.Vector3(3, 0.3, 9),
+  target: impPoint.clone(),
+  active: false, progress: 0, speed: 0.01,
+};
+scene.add(astMesh);
+
+// ═══════════════════════════════════════
+// ASTEROID TRAIL
+// ═══════════════════════════════════════
+const TRAIL_N = 200;
+const trailGeo = new THREE.BufferGeometry();
+const trailPos = new Float32Array(TRAIL_N * 3);
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+const trailPts = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+  color: 0xff8844, size: 0.04, blending: THREE.AdditiveBlending,
+  depthWrite: false, transparent: true, opacity: 0.7,
+}));
+trailPts.visible = false;
+scene.add(trailPts);
+const trailHist = [];
+
+// ═══════════════════════════════════════
+// FIREBALL PARTICLES (6000 GPU particles)
+// ═══════════════════════════════════════
+const FB_N = 6000;
+const fbGeo = new THREE.BufferGeometry();
+const fbPosArr = new Float32Array(FB_N * 3);
+const fbColArr = new Float32Array(FB_N * 3);
+const fbData = [];
+
+for (let i = 0; i < FB_N; i++) {
+  fbPosArr[i*3] = 0; fbPosArr[i*3+1] = -999; fbPosArr[i*3+2] = 0;
+  const r = Math.random();
+  if (r < 0.3) { fbColArr[i*3]=1.0; fbColArr[i*3+1]=0.95; fbColArr[i*3+2]=0.8; }
+  else if (r < 0.7) { fbColArr[i*3]=1.0; fbColArr[i*3+1]=0.45; fbColArr[i*3+2]=0.1; }
+  else { fbColArr[i*3]=0.9; fbColArr[i*3+1]=0.15; fbColArr[i*3+2]=0.03; }
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  fbData.push({
+    dir: new THREE.Vector3(Math.sin(phi)*Math.cos(theta), Math.sin(phi)*Math.sin(theta), Math.cos(phi)),
+    speed: 0.5 + Math.random() * 4.0,
+    life: 1.0, decay: 0.003 + Math.random() * 0.015, active: false,
+  });
+}
+fbGeo.setAttribute('position', new THREE.BufferAttribute(fbPosArr, 3));
+fbGeo.setAttribute('color', new THREE.BufferAttribute(fbColArr, 3));
+const fbMat = new THREE.PointsMaterial({
+  size: 0.06, vertexColors: true, blending: THREE.AdditiveBlending,
+  depthWrite: false, transparent: true, opacity: 0.9,
+});
+const fireball = new THREE.Points(fbGeo, fbMat);
+scene.add(fireball);
+
+// ═══════════════════════════════════════
+// EJECTA PARTICLES (2500, with gravity)
+// ═══════════════════════════════════════
+const EJ_N = 2500;
+const ejGeo = new THREE.BufferGeometry();
+const ejPosArr = new Float32Array(EJ_N * 3);
+const ejColArr = new Float32Array(EJ_N * 3);
+const ejData = [];
+
+for (let i = 0; i < EJ_N; i++) {
+  ejPosArr[i*3] = 0; ejPosArr[i*3+1] = -999; ejPosArr[i*3+2] = 0;
+  const r = Math.random();
+  if (r < 0.5) { ejColArr[i*3]=0.8; ejColArr[i*3+1]=0.5; ejColArr[i*3+2]=0.2; }
+  else if (r < 0.8) { ejColArr[i*3]=0.6; ejColArr[i*3+1]=0.3; ejColArr[i*3+2]=0.1; }
+  else { ejColArr[i*3]=1.0; ejColArr[i*3+1]=0.7; ejColArr[i*3+2]=0.3; }
+  ejData.push({
+    pos: new THREE.Vector3(),
+    vel: new THREE.Vector3(),
+    life: 1.0, decay: 0.002 + Math.random() * 0.006, active: false,
+  });
+}
+ejGeo.setAttribute('position', new THREE.BufferAttribute(ejPosArr, 3));
+ejGeo.setAttribute('color', new THREE.BufferAttribute(ejColArr, 3));
+const ejMat = new THREE.PointsMaterial({
+  size: 0.04, vertexColors: true, blending: THREE.AdditiveBlending,
+  depthWrite: false, transparent: true, opacity: 0.85,
+});
+const ejecta = new THREE.Points(ejGeo, ejMat);
+scene.add(ejecta);
+
+// ═══════════════════════════════════════
+// LIGHTING
+// ═══════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x111122, 0.5));
+const sunL = new THREE.DirectionalLight(0xffeedd, 3.0);
+sunL.position.set(-15, 8, 10);
+scene.add(sunL);
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let active = false, iTime = 0, iEnergy = 0;
+let asteroidFlying = false;
+let pendingEnergy = 0;
+const flashEl = document.getElementById('flash');
+
+// Phase 1: Launch asteroid only (NO effects yet)
+function launch(energy) {
+  if (asteroidFlying || active) return;
+  asteroidFlying = true;
+  pendingEnergy = energy;
+
+  astMesh.userData.active = true;
+  astMesh.userData.progress = 0;
+  astMesh.userData.speed = 0.008 + energy * 0.006;
+  astMesh.position.copy(astMesh.userData.start);
+  astMesh.visible = true;
+  trailPts.visible = true;
+  trailHist.length = 0;
+}
+
+// Phase 2: Asteroid HIT Jupiter → trigger ALL effects
+function detonate(energy) {
+  active = true; iTime = 0; iEnergy = energy;
+  asteroidFlying = false;
+
+  // Fireball
+  const fp = fireball.geometry.attributes.position;
+  for (let i = 0; i < FB_N; i++) {
+    fbData[i].active = true; fbData[i].life = 1.0;
+    fbData[i].speed = (0.5 + Math.random() * 4.0) * (0.5 + energy * 0.8);
+    fbData[i].decay = 0.003 + Math.random() * 0.015;
+    fp.setXYZ(i, impPoint.x, impPoint.y, impPoint.z);
+  }
+  fp.needsUpdate = true;
+
+  // Ejecta
+  const ep = ejecta.geometry.attributes.position;
+  for (let i = 0; i < EJ_N; i++) {
+    ejData[i].active = true; ejData[i].life = 1.0;
+    ejData[i].pos.set(impPoint.x, impPoint.y, impPoint.z);
+    const spd = (0.15 + Math.random() * 1.8) * (0.5 + energy * 0.8);
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    ejData[i].vel.set(
+      Math.sin(ph) * Math.cos(th) * spd,
+      Math.sin(ph) * Math.sin(th) * spd,
+      Math.cos(ph) * spd
+    );
+    ejData[i].decay = 0.002 + Math.random() * 0.006;
+    ep.setXYZ(i, impPoint.x, impPoint.y, impPoint.z);
+  }
+  ep.needsUpdate = true;
+
+  // Flash
+  flashEl.classList.add('active');
+  setTimeout(() => flashEl.classList.remove('active'), 120);
+
+  jupUniforms.uImpactPt.value.copy(impNormal);
+  jupUniforms.uCraterDepth.value = energy * 1.2;
+  jupUniforms.uCraterR.value = 0;
+  jupUniforms.uShockTime.value = 0.0;
+  jupUniforms.uScarAlpha.value = 1.0;
+  atmoUniforms.uImpactPt.value.copy(impNormal);
+  atmoUniforms.uImpactDepth.value = energy * 1.2;
+}
+
+function reset() {
+  active = false; asteroidFlying = false; pendingEnergy = 0;
+  iTime = 0; iEnergy = 0;
+  astMesh.userData.active = false;
+  astMesh.userData.progress = 0;
+  astMesh.position.copy(astMesh.userData.start);
+  astMesh.visible = true;
+  trailPts.visible = false;
+  trailHist.length = 0;
+  jupUniforms.uCraterDepth.value = 0;
+  jupUniforms.uCraterR.value = 0;
+  jupUniforms.uShockTime.value = -1.0;
+  jupUniforms.uScarAlpha.value = 0.0;
+  atmoUniforms.uImpactDepth.value = 0;
+  const fp = fireball.geometry.attributes.position;
+  const ep = ejecta.geometry.attributes.position;
+  for (let i = 0; i < FB_N; i++) { fbData[i].active = false; fp.setXYZ(i, 0, -999, 0); }
+  for (let i = 0; i < EJ_N; i++) { ejData[i].active = false; ep.setXYZ(i, 0, -999, 0); }
+  fp.needsUpdate = true;
+  ep.needsUpdate = true;
+  fbMat.opacity = 0.9;
+  ejMat.opacity = 0.85;
+}
+
+// Expose
+window._impact = () => launch(1.0);
+window._small = () => launch(0.4);
+window._reset = () => reset();
+
+// ═══════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  controls.update();
+  jupUniforms.uTime.value += dt;
+
+  // Asteroid motion
+  const ud = astMesh.userData;
+  if (ud.active) {
+    ud.progress += ud.speed;
+    if (ud.progress >= 1.0) {
+      ud.active = false;
+      astMesh.visible = false;
+      trailPts.visible = false;
+    } else {
+      const t = ud.progress * ud.progress; // ease-in
+      astMesh.position.lerpVectors(ud.start, ud.target, t);
+      trailHist.push(astMesh.position.clone());
+      if (trailHist.length > TRAIL_N) trailHist.shift();
+      const tp = trailPts.geometry.attributes.position.array;
+      for (let i = 0; i < TRAIL_N; i++) {
+        const idx = trailHist.length - 1 - i;
+        if (idx >= 0 && idx < trailHist.length) {
+          tp[i*3]=trailHist[idx].x; tp[i*3+1]=trailHist[idx].y; tp[i*3+2]=trailHist[idx].z;
+        } else { tp[i*3]=0; tp[i*3+1]=-999; tp[i*3+2]=0; }
+      }
+      trailPts.geometry.attributes.position.needsUpdate = true;
+      // Asteroid hit Jupiter surface? → DETONATE!
+      if (astMesh.position.length() < 2.15) {
+        ud.active = false; astMesh.visible = false; trailPts.visible = false;
+        detonate(pendingEnergy);
+      }
+    }
+  }
+
+  // Impact effects
+  if (active) {
+    iTime += dt;
+
+    // Fireball
+    const fp = fireball.geometry.attributes.position;
+    let fAlive = false;
+    for (let i = 0; i < FB_N; i++) {
+      const d = fbData[i];
+      if (!d.active) continue;
+      d.life -= d.decay;
+      if (d.life <= 0) { d.active = false; fp.setXYZ(i, 0, -999, 0); continue; }
+      fAlive = true;
+      const dist = d.speed * (1.0 - d.life) * 2.5;
+      fp.setXYZ(i,
+        impPoint.x + d.dir.x * dist,
+        impPoint.y + d.dir.y * dist,
+        impPoint.z + d.dir.z * dist
+      );
+    }
+    fp.needsUpdate = true;
+
+    // Ejecta with gravity
+    const ep = ejecta.geometry.attributes.position;
+    let eAlive = false;
+    for (let i = 0; i < EJ_N; i++) {
+      const d = ejData[i];
+      if (!d.active) continue;
+      d.life -= d.decay;
+      if (d.life <= 0) { d.active = false; ep.setXYZ(i, 0, -999, 0); continue; }
+      eAlive = true;
+      // Jupiter gravity
+      const g = d.pos.clone().normalize().multiplyScalar(-0.15 / Math.max(0.5, d.pos.length() - 1.5));
+      d.vel.add(g.multiplyScalar(dt));
+      d.pos.add(d.vel.clone().multiplyScalar(dt));
+      if (d.pos.length() < 2.05) { d.active = false; ep.setXYZ(i, 0, -999, 0); continue; }
+      ep.setXYZ(i, d.pos.x, d.pos.y, d.pos.z);
+    }
+    ep.needsUpdate = true;
+
+    fbMat.opacity = Math.max(0, 0.9 - iTime * 0.25);
+    ejMat.opacity = Math.max(0, 0.85 - iTime * 0.15);
+
+    const phase = Math.min(iTime / 2.5, 1.0);
+    jupUniforms.uCraterR.value = phase * (0.25 + iEnergy * 0.35);
+    jupUniforms.uCraterDepth.value = (1.0 - phase) * iEnergy * 1.2;
+    jupUniforms.uShockTime.value += dt;
+    // Scar slowly cools but never fully fades (bottom at 0.15)
+    jupUniforms.uScarAlpha.value = Math.max(0.15, jupUniforms.uScarAlpha.value - dt * 0.08);
+    atmoUniforms.uImpactDepth.value = (1.0 - phase) * iEnergy * 1.2;
+
+    // End when shock ring has fully faded
+    if (!fAlive && !eAlive && jupUniforms.uShockTime.value > 7.0) {
+      active = false;
+      jupUniforms.uCraterDepth.value = 0;
+      jupUniforms.uCraterR.value = Math.max(jupUniforms.uCraterR.value, 0.15);
+      atmoUniforms.uImpactDepth.value = 0;
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === ' ') { e.preventDefault(); launch(1.0); }
+  if (e.key === 's' || e.key === 'S') launch(0.4);
+  if (e.key === 'r' || e.key === 'R') reset();
+});
+
+animate();
+console.log('🪐 Jupiter Impact Demo — Ready');
+console.log('  SPACE=Impact  S=Small  R=Reset');
+</script>
+</body>
+</html>
