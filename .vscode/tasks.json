@@ -7,6 +7,61 @@
 			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D",
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Install APK",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54 && D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk && D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Git Commit & Push",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m \"V4.1: 几何体性能优化 - Icosahedron detail 8→4 (131万→5K三角形), SphereGeometry降段数, FPS显示三角形数\"; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Git Commit & Push",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add app/src/main/assets/solar.html AGENTS.md; git -C D:\\work\\ai_code\\SolarSystem3D commit -m \"V4.1 geometry optimization: sun Icosahedron detail 8 to 4, sphere segments reduced, FPS shows triangle count\"; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Git Push V4.1",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A && git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.1-geometry-optimization && git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Git Push V4.1",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.1-geometry-optimization; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Git Backup V41",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.1; git -C D:\\work\\ai_code\\SolarSystem3D push"
 		}
 	]
 }
