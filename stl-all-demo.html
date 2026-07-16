@@ -1,0 +1,57 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0}body{background:#111;color:#fff;font:14px monospace}</style></head><body>
+<div id="info" style="position:fixed;top:8px;left:8px;z-index:10">加载中...</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+<script>
+var rockColors = [0xaaaaaa,0xb0b0b0,0xa0a0a0,0xababab,0xb5b5b5,0xa5a5a5,0x9e9e9e,0xa8b0b8,0xa8b8a8,0xb0a0b0,0x989898,0xa8a8a8,0xa2a2a2,0xacacac,0xb2b2b2,0x9a9a9a,0xa6a6a6,0xa8b0c0,0xa5a5a5,0x9c9c9c];
+var STL_NAMES = ['bennu','eros','toutatis','geographos','kleopatra','asteroid_rq36'];
+
+function parseSTL(buffer){
+  var dv=new DataView(buffer),num=dv.getUint32(80,true);
+  var verts=new Float32Array(num*9),offset=84;
+  for(var i=0;i<num;i++){for(var j=0;j<3;j++){var b=offset+12+j*12,vi=i*9+j*3;verts[vi]=dv.getFloat32(b,true);verts[vi+1]=dv.getFloat32(b+4,true);verts[vi+2]=dv.getFloat32(b+8,true);}offset+=50;}
+  return {verts:verts,count:num};
+}
+
+var scene=new THREE.Scene();scene.background=new THREE.Color(0x000015);
+var camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,100);
+camera.position.set(0,2,8);camera.lookAt(0,0,0);
+var renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0x556677,0.55));
+scene.add(new THREE.PointLight(0xffffff,5,0,0));
+
+var loaded=0;
+STL_NAMES.forEach(function(name,idx){
+  fetch('app/src/main/assets/models/'+name+'.stl').then(function(r){return r.arrayBuffer()}).then(function(buf){
+    var stl=parseSTL(buf);
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(stl.verts,3));
+    geo.computeVertexNormals();
+    var mat=new THREE.MeshLambertMaterial({color:rockColors[idx]});
+    var mesh=new THREE.Mesh(geo,mat);
+    var box=new THREE.Box3().setFromObject(mesh);
+    var sz=box.getSize(new THREE.Vector3());
+    var maxDim=Math.max(sz.x,sz.y,sz.z);
+    if(maxDim>0)mesh.scale.setScalar(1.0/maxDim);
+    var col=idx%3,row=Math.floor(idx/3);
+    mesh.position.set((col-1)*3,(1-row)*3,0);scene.add(mesh);
+    var cvs=document.createElement('canvas');cvs.width=256;cvs.height=64;
+    var ctx=cvs.getContext('2d');ctx.font='bold 36px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#fff';ctx.fillText(name,128,32);
+    var tex=new THREE.CanvasTexture(cvs);tex.minFilter=THREE.LinearFilter;
+    var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+    sp.scale.set(2,0.5,1);sp.position.y=1.3;sp.renderOrder=999;mesh.add(sp);
+    loaded++;document.getElementById('info').textContent='已加载 '+loaded+'/6 | 拖拽旋转 | 滚轮缩放';
+  });
+});
+
+var dragging=false,px=0,py=0;
+renderer.domElement.addEventListener('mousedown',function(e){dragging=true;px=e.clientX;py=e.clientY;});
+renderer.domElement.addEventListener('mousemove',function(e){if(!dragging)return;var dx=e.clientX-px,dy=e.clientY-py;var s=new THREE.Spherical().setFromVector3(camera.position);s.theta-=dx*0.01;s.phi-=dy*0.01;s.phi=Math.max(0.1,Math.min(2.9,s.phi));camera.position.setFromSpherical(s);camera.lookAt(0,0,0);px=e.clientX;py=e.clientY;});
+renderer.domElement.addEventListener('mouseup',function(){dragging=false;});
+renderer.domElement.addEventListener('wheel',function(e){e.preventDefault();var s=new THREE.Spherical().setFromVector3(camera.position);s.radius+=e.deltaY*0.01;s.radius=Math.max(2,Math.min(20,s.radius));camera.position.setFromSpherical(s);camera.lookAt(0,0,0);},{passive:false});
+
+function animate(){requestAnimationFrame(animate);scene.children.forEach(function(c){if(c.isMesh)c.rotation.y+=0.005;});renderer.render(scene,camera);}
+animate();
+</script></body></html>

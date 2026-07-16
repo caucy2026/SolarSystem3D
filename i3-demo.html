@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>*{margin:0;padding:0}body{background:#111}</style></head><body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+<script>
+// === 完全复刻设备上 I3 小行星的渲染管线 ===
+const ROCK_COLORS = [
+  0x888888,0x998877,0x776655,0x887766,0x999999,0xaa9977,0x665544,0x778899,0x997766,0x887788,
+  0x666666,0x554433,0x777777,0x887755,0x998866,0x445566,0x776644,0x8899aa,0x998877,0x555544
+];
+// I3: ai=3, impact asteroid → color=rockColors[11]=0x554433, model=STL_MODELS[5]=asteroid_rq36.stl
+const I3_COLOR = ROCK_COLORS[11];  // 0x554433 = dark brown
+const I3_MODEL = 'app/src/main/assets/models/asteroid_rq36.stl';
+
+// STL 解析器（与 solar.html 完全一致）
+function parseSTL(buffer){
+  var dv=new DataView(buffer);
+  var num=dv.getUint32(80,true);
+  var verts=new Float32Array(num*9);
+  var norms=new Float32Array(num*9);
+  var offset=84;
+  for(var i=0;i<num;i++){
+    for(var j=0;j<3;j++){
+      var base=offset+12+j*12;
+      var vi=i*9+j*3;
+      verts[vi]=dv.getFloat32(base,true);
+      verts[vi+1]=dv.getFloat32(base+4,true);
+      verts[vi+2]=dv.getFloat32(base+8,true);
+    }
+    offset+=50;
+  }
+  return {verts:verts,norms:norms,count:num};
+}
+
+// 场景
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000015);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(2, 1.5, 3);
+camera.lookAt(0,0,0);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// 光照
+scene.add(new THREE.AmbientLight(0x334455, 0.35));
+scene.add(new THREE.PointLight(0xffffff, 5, 0, 0));
+
+// 加载 STL 并用 MeshBasicMaterial（与设备完全相同）
+fetch(I3_MODEL)
+  .then(r=>r.arrayBuffer())
+  .then(buf=>{
+    const stl = parseSTL(buf);
+    console.log('STL loaded: '+stl.count+' triangles, '+(stl.count*3)+' vertices');
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(stl.verts, 3));
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+
+    // MeshBasicMaterial — 与设备 I3 完全一致
+    const mat = new THREE.MeshBasicMaterial({color: I3_COLOR});
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // 缩放到约 1 单位
+    const box = new THREE.Box3().setFromObject(mesh);
+    const sz = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(sz.x, sz.y, sz.z);
+    if(maxDim>0) mesh.scale.setScalar(1.0/maxDim);
+
+    scene.add(mesh);
+    document.getElementById('info').textContent =
+      'I3: asteroid_rq36.stl | MeshBasicMaterial | 0x554433 | '+stl.count+' tris | Desktop渲染';
+  })
+  .catch(e=>{
+    document.getElementById('info').textContent = 'STL 加载失败: '+e;
+  });
+
+// 对比：相同颜色 + MeshLambertMaterial（原先用的）
+fetch(I3_MODEL)
+  .then(r=>r.arrayBuffer())
+  .then(buf=>{
+    const stl = parseSTL(buf);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(stl.verts, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshLambertMaterial({color: I3_COLOR});
+    const mesh = new THREE.Mesh(geo, mat);
+    const box = new THREE.Box3().setFromObject(mesh);
+    const sz = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(sz.x, sz.y, sz.z);
+    if(maxDim>0) mesh.scale.setScalar(1.0/maxDim);
+    mesh.position.x = -2.5;  // 放左边
+    scene.add(mesh);
+    document.getElementById('info2').textContent = '← 左边: Lambert 光照射 | 右边: Basic 纯色 →';
+  })
+  .catch(e=>{});
+
+// 动画
+function animate(){
+  requestAnimationFrame(animate);
+  // 旋转场景中所有 mesh
+  scene.children.forEach(c=>{if(c.isMesh&&c!==scene.children[0])c.rotation.y+=0.01;});
+  camera.position.x = 3*Math.sin(Date.now()*0.0005);
+  camera.position.z = 3*Math.cos(Date.now()*0.0005);
+  camera.lookAt(0,0,0);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+<div id="info" style="position:fixed;top:8px;left:8px;color:#fff;font:14px monospace;background:rgba(0,0,0,0.7);padding:6px 10px;border-radius:4px">加载中...</div>
+<div id="info2" style="position:fixed;top:36px;left:8px;color:#aaa;font:12px monospace;background:rgba(0,0,0,0.7);padding:4px 8px;border-radius:4px"></div>
+</body></html>

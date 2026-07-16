@@ -1,6 +1,6 @@
 # SolarSystem3D — AI 编程助手指南
 
-> 双屏 3D 太阳系 Android 应用。基于 V900 平台（Mali-G52 + OpenGL ES 3.2 + 双屏异显）。
+> 双屏 3D 太阳系 Android 应用。Three.js r150 WebView 渲染，Mali-G52 GPU，双屏异显。
 
 ---
 
@@ -30,22 +30,26 @@ adb install -r D:\work\ai_code\SolarSystem3D\app\build\outputs\apk\release\app-r
 
 ### 双 Activity 方案
 
-| Activity | 物理屏 | 视角 | 启动方式 |
-|----------|:------:|:----:|----------|
-| `MainActivity` | Display 0 | 🔭 单星球细节 3D | 用户点击图标 |
-| `SolarPresentation` | Display 2 | ☀️ 太阳系全景 | `startActivity` + 反射 `setLaunchDisplayId` |
+| Activity | 物理屏 | 文件 | 视角 | 启动方式 |
+|----------|:------:|------|:----:|----------|
+| `MainActivity` | Display 0 | `planet.html` | 🔭 单星球 3D + 信息卡片 | 用户点击图标 |
+| `SolarPresentation` | Display 2 | `solar.html` | ☀️ 太阳系全景 + 撞击系统 | `startActivity` + 反射 `setLaunchDisplayId` |
 
-### 3D 引擎
+### 渲染引擎
 
-- **Raw OpenGL ES 3.0**，零外部依赖
-- 自建数学库 (`Vec3`/`Mat4`)，自建球体和光环网格
-- 所有星球使用**统一等距矩形投影纹理**（不分瓦片）
+- **Three.js r150** 内联打包，零 CDN 依赖
+- 两个 HTML 文件各自独立 Three.js 场景，通过 `Android.onPlanetSelected()` JS Bridge 通信
+- STL 3D 模型通过 `http://local.stl/*` 虚拟 URL → `shouldInterceptRequest` 从 assets 读取
 
-### 纹理源
+### 数据流
 
-- `https://www.solarsystemscope.com/textures/download/`
-- 免费 CC Attribution 4.0，2K/8K 单张 JPG
-- 全部 13 个文件 ≈ 10MB（远小于 Go3DGlobe 的瓦片方案）
+```
+副屏(solar.html) 用户点击行星
+  → Android.onPlanetSelected(name)
+    → MainActivity.selectPlanet(name)
+      → 主屏(planet.html) webView.evaluateJavascript("onSelectPlanet('name')")
+        → showPlanet(name) + showSwInfo(name) → 3D星球 + 信息卡
+```
 
 ---
 
@@ -53,33 +57,71 @@ adb install -r D:\work\ai_code\SolarSystem3D\app\build\outputs\apk\release\app-r
 
 | 文件 | 职责 |
 |------|------|
-| `MainActivity.kt` | 主屏：单星球 3D 细节 + Arcball 旋转/缩放 |
-| `SolarPresentation.kt` | 副屏：太阳系全景 + 触摸拾取 |
-| `SolarState.kt` | 单例：共享渲染器引用 + 回调 |
-| `PlanetData.kt` | 9 行星 + 太阳 + 卫星轨道/物理数据 + 纹理 URL |
-| `render/SolarRenderer.kt` | 副屏渲染：公转/自转动画，9 行星+卫星+轨道+光环 |
-| `render/PlanetDetailRenderer.kt` | 主屏渲染：高模单星球 + Blinn-Phong 光照 |
-| `render/SphereMesh.kt` | UV 球体网格（低模 24×12 / 高模 64×32） |
-| `render/RingMesh.kt` | 土星环 CD 状环形 strip |
-| `render/ShaderProgram.kt` | GLSL 着色器：行星 Blinn-Phong / 太阳自发光 / 光环透明 |
-| `render/TextureManager.kt` | 纹理加载/缓存/创建 fallback 纯色 |
-| `render/Camera3D.kt` | Arcball 旋转 + 缩放相机 |
-| `touch/ArcballController.kt` | 主屏拖拽旋转 + Pinch 缩放 |
-| `touch/PlanetPicker.kt` | 副屏射线-球体相交拾取 |
-| `util/Math3D.kt` | 自建 Vec3 / Mat4（无外部依赖） |
-| `util/PlanetData.kt` | 天体数据定义 |
+| `MainActivity.kt` | 主屏：加载 `planet.html`，WebView + JS Bridge，STL/NAS 纹理拦截 |
+| `SolarPresentation.kt` | 副屏：加载 `solar.html`，WebView + JS Bridge，纹理下载缓存 |
+| `SolarState.kt` | 单例：MainActivity / SolarPresentation 引用 + 回调 |
+| **`planet.html`** | 主屏渲染：单星球 3D（Three.js）+ `#swInfo` 信息卡片 + `showPlanet/showSwInfo` |
+| **`solar.html`** | 副屏渲染：太阳系全景 + Transit 小行星 + 木星撞击系统（引力波/坑） |
+| `app/src/main/assets/models/` | STL 3D 小行星模型（bennu/eros/toutatis/geographos/kleopatra/asteroid_rq36.stl） |
 
 ---
 
-## 太阳系缩放方案
+## solar.html 场景结构
 
-| 参数 | 实际值 | 显示缩放 |
-|------|--------|---------|
-| 太阳半径 | 696,340 km | 0.3（显示单位） |
-| 行星半径 | 2,440~69,911 km | 压缩到太阳的 0.01~0.1 |
-| 小卫星半径 | <1,000 km | 放大 30× 确保可见 |
-| 轨道半径 | 0.387~30.07 AU | ×2.5 显示单位 |
-| 卫星轨道 | 0.00006~0.0126 AU | ×8 额外放大 |
+### 对象层级
+- ☀️ 太阳（Icosahedron + ShaderMaterial + 太阳风暴粒子）
+- 🪐 8 大行星（SphereGeometry + 纹理 + 标签）
+- ☄️ 6 颗 STL 小行星（独立轨道 23-27，`data` 数组中 `model` 字段）
+- 🌑 17 颗卫星（确定性哈希初始角度，两边屏幕一致）
+- 🪨 20 颗 Transit 小行星（`asteroidGroup`）：
+  - B0-B11：小行星带穿梭（轨道 21-31）
+  - I0-I7：撞击专用（外太阳系 → 木星捕获 → 撞击）
+- 💫 主小行星带（3000 粒子，轨道 21.5-24）
+- 💫 柯伊伯带（9000 粒子，轨道 59-88）
+- 🔵 轨道线（仅 8 大行星，色相均匀分布避免棕色）
+
+### 撞击系统
+- 每 ~30s 一颗 I 系列小行星从外太阳系穿越，被木星捕获
+- 撞击效果：3 层蓝色引力波扩散环 + 木星表面暗色撞击坑
+- 主屏聚焦木星时同步可见（`asteroidGroup.visible` + `impactEffects` 可见）
+
+### Mali-G52 兼容注意事项
+- STL 材质用 `MeshLambertMaterial`（`MeshPhongMaterial` + `flatShading` 渲染异常）
+- `MeshBasicMaterial` 无光照 → 扁平无立体感 → 不用于 STL
+- 岩石色板全部灰调，避免棕色渲染
+- 标签用 Canvas Sprite（512×128，纯文字无背景），`renderOrder=999`
+
+### 主屏性能优化（`updateMainScreenVisibility`）
+- 主屏只渲染：焦点星球 + 卫星 + 光环 + 撞击特效（若聚焦木星）
+- 隐藏：其他行星、轨道线、小行星带、柯伊伯带、Transit 小行星（非捕获态）、星空背景
+
+---
+
+## planet.html 场景结构
+
+### 对象
+- 单星球 3D 视图（`showPlanet` 函数）
+- STL 小行星支持（异步加载 + `_reqId` 防抖）
+- 卫星系统（程序化纹理 fallback）
+- 土星光环（多层 RingGeometry）
+- 相机轨道（单指旋转 + 双指缩放 + 惯性）
+
+### 信息卡片（`#swInfo`）
+- 位置：底部居中，半透明毛玻璃效果
+- 内容：中英文名、距太阳距离（km + 光行时间）、半径/重力/公转/自转、描述、冷知识（可翻页）
+- 数据源：`planetInfo` 对象（含 Sun + 8 大行星 + Pluto + 5 STL 小行星）
+
+---
+
+## 太阳系缩放方案（solar.html）
+
+| 参数 | 显示值 |
+|------|--------|
+| 太阳半径 | 3.5 |
+| 行星半径 | 0.5~2.0 |
+| 小行星半径 | 0.5~1.1 |
+| 轨道半径 | 6~55 |
+| 卫星轨道 | 1.3~15.0 |
 
 **原则**：所有星球统一缩放处理，不做特殊区分。
 
@@ -92,11 +134,21 @@ adb install -r D:\work\ai_code\SolarSystem3D\app\build\outputs\apk\release\app-r
 | 🌍 地球 | 月球 |
 | ♂ 火星 | 火卫一、火卫二 |
 | ♃ 木星 | 木卫一 ~ 四（伽利略卫星） |
-| ♄ 土星 | 土卫六、土卫二、土卫一 |
+| ♄ 土星 | 土卫六、土卫二 |
 | ⛢ 天王星 | 天卫一 ~ 五 |
 | ♆ 海王星 | 海卫一 |
 
 ---
+
+## ⚠️ 编辑铁律
+
+1. 不用 PowerShell 管道编辑 `.kt` 或 `.html` 文件（UTF-8 损坏）
+2. 所有星球统一缩放方案，不做地球特殊处理
+3. 纹理是单张等距矩形投影，非瓦片金字塔
+4. 主屏 = `planet.html`，副屏 = `solar.html`，**不要混用**
+5. 信息卡片在 `planet.html` 的 `#swInfo`，不要用 HTML 覆盖层替代
+6. 双 Activity 生命周期：副屏返回键 → 主屏 `finishAffinity()`
+7. Mali-G52 不用 `MeshPhongMaterial` + `flatShading`（渲染为棕色），不用 `MeshBasicMaterial`（无立体感）
 
 ## ⚠️ 编辑铁律
 

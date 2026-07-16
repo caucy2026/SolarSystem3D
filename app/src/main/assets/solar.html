@@ -29,7 +29,7 @@ console.log('SOLAR: focus=' + (FOCUS_PLANET || 'none') + ' main=' + IS_MAIN_SCRE
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.3, 600);
 var focusTarget = new THREE.Vector3(0, 0, 0);
-var focusDistance = IS_MAIN_SCREEN ? 3.0 : 85;  // 主屏木星超大特写，副屏全景
+var focusDistance = IS_MAIN_SCREEN ? 7.0 : 85;  // 主屏木星大小适中
 
 if (IS_MAIN_SCREEN) {
   // 主屏：近距离观察焦点星球
@@ -49,8 +49,15 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.physicallyCorrectLights = false;
 document.body.appendChild(renderer.domElement);
 
+// 信息卡片 (移植自 planet.html)
+var swInfoDiv = document.createElement('div');
+swInfoDiv.id = 'swInfoHTML';
+swInfoDiv.style.cssText = 'display:none;position:fixed;bottom:20px;right:10px;z-index:2147483647;max-width:270px;pointer-events:auto;user-select:none;background:rgba(6,12,22,0.88);border:1px solid rgba(90,140,190,0.3);border-radius:8px;padding:8px 12px;font-family:sans-serif;font-size:13px;line-height:1.7;color:#cfe3f5;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
+swInfoDiv.innerHTML = '<div style="display:flex;align-items:baseline;gap:6px;font-size:16px;font-weight:700;color:#fff"><span id="swHTMLNameZh"></span><span id="swHTMLNameEn" style="font-size:12px;font-weight:400;color:rgba(207,227,245,0.45);font-style:italic"></span></div><div id="swHTMLDist" style="font-size:12px;color:rgba(207,227,245,0.65)"></div><div id="swHTMLSun" style="font-size:11px;color:rgba(207,227,245,0.4);margin-bottom:4px"></div><div id="swHTMLStats" style="font-size:12px;color:#cfe3f5;line-height:1.8"></div><div id="swHTMLDesc" style="font-size:12px;line-height:1.6;color:rgba(207,227,245,0.65);margin-top:4px;margin-bottom:8px"></div><div style="border-radius:6px;padding:6px 8px;background:rgba(255,200,100,0.06);border:1px solid rgba(255,200,100,0.12)"><div style="font-size:10px;color:rgba(200,160,80,0.65)">📚 你知道吗</div><div id="swHTMLTrivia" style="font-size:12px;line-height:1.5;color:rgba(220,190,130,0.8)"></div><div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px"><span onclick="document.getElementById(\'swInfoHTML\').style.display=\'none\'" style="color:rgba(180,140,80,0.55);cursor:pointer">✕ 关闭</span><span onclick="nextSwTriviaHTML()" style="color:rgba(180,140,80,0.55);cursor:pointer">换一条 ↻</span></div></div>';
+document.body.appendChild(swInfoDiv);
+
 // 太阳光源
-scene.add(new THREE.AmbientLight(0x334455, 0.35));
+scene.add(new THREE.AmbientLight(0x556677, 0.55));
 const sunLight = new THREE.PointLight(0xffffff, 5, 0, 0);
 scene.add(sunLight);
 
@@ -159,30 +166,30 @@ const planets = [
   {name:'Earth',  cn:'地球', orbit:15, size:1.0,  color:0x5080d0, period:60,   rot:15,  tex:'2k_earth_daymap.jpg',
    moons:[{name:'Moon',cn:'月球',orbit:3.5,size:0.7,color:0xc0c0c0,period:5,tex:'2k_moon.jpg'}]},
   {name:'Mars',   cn:'火星', orbit:20, size:0.7,  color:0xd04020, period:113,  rot:15,  tex:'2k_mars.jpg',
-   moons:[{name:'Phobos',orbit:1.8,size:0.3,color:0x887766,period:0.8},{name:'Deimos',orbit:2.5,size:0.28,color:0x998877,period:1.6}]},
+   moons:[{name:'Phobos',cn:'火卫一',orbit:1.8,size:0.3,color:0x887766,period:0.8},{name:'Deimos',cn:'火卫二',orbit:2.5,size:0.28,color:0x998877,period:1.6}]},
   {name:'Jupiter',cn:'木星', orbit:28, size:2.0,  color:0xd8b868, period:712,  rot:15,  tex:'2k_jupiter.jpg',
    moons:[
-    {name:'Io',orbit:4.5,size:0.55,color:0xe8d830,period:2,tex:NASA_TEX+'Jupiter%20-%20Io%20(A)/Jupiter%20-%20Io%20(A).jpg'},
-    {name:'Europa',orbit:7.0,size:0.5,color:0xd8e0e8,period:4,tex:NASA_TEX+'Jupiter%20-%20Europa/Jupiter%20-%20Europa.jpg'},
-    {name:'Ganymede',orbit:10.0,size:0.6,color:0xa0a0a8,period:7,tex:NASA_TEX+'Jupiter%20-%20Ganymede/Jupiter%20-%20Ganymede.jpg'},
-    {name:'Callisto',orbit:15.0,size:0.55,color:0x707078,period:17,tex:NASA_TEX+'Jupiter%20-%20Callisto/Jupiter%20-%20Callisto.jpg'}
+    {name:'Io',cn:'木卫一',orbit:4.5,size:0.55,color:0xe8d830,period:2,tex:NASA_TEX+'Jupiter%20-%20Io%20(A)/Jupiter%20-%20Io%20(A).jpg'},
+    {name:'Europa',cn:'木卫二',orbit:7.0,size:0.5,color:0xd8e0e8,period:4,tex:NASA_TEX+'Jupiter%20-%20Europa/Jupiter%20-%20Europa.jpg'},
+    {name:'Ganymede',cn:'木卫三',orbit:10.0,size:0.6,color:0xa0a0a8,period:7,tex:NASA_TEX+'Jupiter%20-%20Ganymede/Jupiter%20-%20Ganymede.jpg'},
+    {name:'Callisto',cn:'木卫四',orbit:15.0,size:0.55,color:0x707078,period:17,tex:NASA_TEX+'Jupiter%20-%20Callisto/Jupiter%20-%20Callisto.jpg'}
    ]},
   {name:'Saturn', cn:'土星', orbit:37, size:1.7,  color:0xe0c880, period:1768, rot:15,  tex:'2k_saturn.jpg', ring:true,
    moons:[
-    {name:'Titan',orbit:7.0,size:0.6,color:0xd8b040,period:16,tex:NASA_TEX+'Saturn%20-%20Titan/Saturn%20-%20Titan.jpg'},
-    {name:'Enceladus',orbit:4.5,size:0.3,color:0xe8e8f0,period:2,tex:NASA_TEX+'Saturn%20-%20Enceladus/Saturn%20-%20Enceladus.jpg'}
+    {name:'Titan',cn:'土卫六',orbit:7.0,size:0.6,color:0xd8b040,period:16,tex:NASA_TEX+'Saturn%20-%20Titan/Saturn%20-%20Titan.jpg'},
+    {name:'Enceladus',cn:'土卫二',orbit:4.5,size:0.3,color:0xe8e8f0,period:2,tex:NASA_TEX+'Saturn%20-%20Enceladus/Saturn%20-%20Enceladus.jpg'}
    ]},
   {name:'Uranus', cn:'天王星',orbit:47, size:1.3,  color:0x80d0d8, period:5043, rot:15, tex:'2k_uranus.jpg',
    moons:[
-    {name:'Miranda',orbit:3.5,size:0.28,color:0xa0a8b0,period:8,tex:NASA_TEX+'Uranus%20-%20Miranda/Uranus%20-%20Miranda.jpg'},
-    {name:'Ariel',orbit:5.0,size:0.35,color:0x90a0a8,period:12,tex:NASA_TEX+'Uranus%20-%20Ariel/Uranus%20-%20Ariel.jpg'},
-    {name:'Umbriel',orbit:6.5,size:0.35,color:0x707880,period:16,tex:NASA_TEX+'Uranus%20-%20Umbriel/Uranus%20-%20Umbriel.jpg'},
-    {name:'Titania',orbit:8.0,size:0.4,color:0x889098,period:36,tex:NASA_TEX+'Uranus%20-%20Titania/Uranus%20-%20Titania.jpg'},
-    {name:'Oberon',orbit:10.0,size:0.38,color:0x788088,period:56,tex:NASA_TEX+'Uranus%20-%20Oberon/Uranus%20-%20Oberon.jpg'}
+    {name:'Miranda',cn:'天卫五',orbit:3.5,size:0.28,color:0xa0a8b0,period:8,tex:NASA_TEX+'Uranus%20-%20Miranda/Uranus%20-%20Miranda.jpg'},
+    {name:'Ariel',cn:'天卫一',orbit:5.0,size:0.35,color:0x90a0a8,period:12,tex:NASA_TEX+'Uranus%20-%20Ariel/Uranus%20-%20Ariel.jpg'},
+    {name:'Umbriel',cn:'天卫二',orbit:6.5,size:0.35,color:0x707880,period:16,tex:NASA_TEX+'Uranus%20-%20Umbriel/Uranus%20-%20Umbriel.jpg'},
+    {name:'Titania',cn:'天卫三',orbit:8.0,size:0.4,color:0x889098,period:36,tex:NASA_TEX+'Uranus%20-%20Titania/Uranus%20-%20Titania.jpg'},
+    {name:'Oberon',cn:'天卫四',orbit:10.0,size:0.38,color:0x788088,period:56,tex:NASA_TEX+'Uranus%20-%20Oberon/Uranus%20-%20Oberon.jpg'}
    ]},
   {name:'Neptune',cn:'海王星',orbit:55, size:1.2,  color:0x4060e0, period:9890, rot:15,  tex:'2k_neptune.jpg',
    moons:[
-    {name:'Triton',orbit:7.0,size:0.5,color:0xb8c0c8,period:6,tex:NASA_TEX+'Neptune%20-%20Triton/Neptune%20-%20Triton.jpg'}
+    {name:'Triton',cn:'海卫一',orbit:7.0,size:0.5,color:0xb8c0c8,period:6,tex:NASA_TEX+'Neptune%20-%20Triton/Neptune%20-%20Triton.jpg'}
    ]},
   // ===== 小行星带 (火星22 ↔ 木星28之间) =====
   {name:'Bennu',    cn:'小行星 Bennu(3D)', orbit:23, size:1.1, color:0x999999, period:180, rot:5, model:'models/bennu.stl'},
@@ -276,15 +283,17 @@ function createSTLMesh(stlData, color){
   var geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(stlData.verts,3));
   geo.setAttribute('normal',new THREE.BufferAttribute(stlData.norms,3));
+  geo.computeVertexNormals();  // STL 自带法线不可靠，重新计算确保光照正确
   geo.computeBoundingSphere();
-  var mat=new THREE.MeshPhongMaterial({color:color,shininess:3,flatShading:true});
+  // MeshLambertMaterial: Mali-G52 兼容性最好，避免 Phong flatShading 棕色渲染
+  var mat=new THREE.MeshLambertMaterial({color:color});
   return new THREE.Mesh(geo,mat);
 }
 var stlCache={};
 function loadSTLModel(modelPath, color, size, callback){
   if(stlCache[modelPath]){
     var m=stlCache[modelPath].clone();
-    m.material=new THREE.MeshPhongMaterial({color:color,shininess:3,flatShading:true});
+    m.material=new THREE.MeshLambertMaterial({color:color});
     callback(m); return;
   }
   var url='http://local.stl/'+modelPath.replace(/^.*[\\\/]/,'');
@@ -295,7 +304,7 @@ function loadSTLModel(modelPath, color, size, callback){
       var mesh=createSTLMesh(stlData, color);
       stlCache[modelPath]=mesh;
       var clone=mesh.clone();
-      clone.material=new THREE.MeshPhongMaterial({color:color,shininess:3,flatShading:true});
+      clone.material=new THREE.MeshLambertMaterial({color:color});
       callback(clone);
     })
     .catch(function(e){
@@ -305,6 +314,7 @@ function loadSTLModel(modelPath, color, size, callback){
 }
 
 
+var orbitCount = 0;
 planets.forEach((p,i)=>{
   var mesh, geo, mat;
   if(p.model){
@@ -314,6 +324,7 @@ planets.forEach((p,i)=>{
     mesh=new THREE.Mesh(geo, mat);
     loadSTLModel(p.model, p.color, p.size, function(stlMesh){
       if(stlMesh){
+        console.log('PLANET_STL loaded: '+p.name+' model='+p.model+' verts='+stlMesh.geometry.attributes.position.count);
         // 缩放到合适大小
         var box=new THREE.Box3().setFromObject(stlMesh);
         var sz=box.getSize(new THREE.Vector3());
@@ -322,11 +333,13 @@ planets.forEach((p,i)=>{
         stlMesh.userData=mesh.userData;
         stlMesh.position.copy(mesh.position);
         // 转移旧标签到STL模型
-        mesh.children.forEach(function(c){if(c.userData&&c.userData.isLabel){mesh.remove(c);stlMesh.add(c);c.position.y=p.size*1.6;}});
+        mesh.children.forEach(function(c){if(c.userData&&c.userData.isLabel){mesh.remove(c);stlMesh.add(c);c.position.y=p.size*1.8;}});
         scene.remove(mesh);
         scene.add(stlMesh);
         var idx=planetMeshes.indexOf(mesh);
         if(idx>=0) planetMeshes[idx]=stlMesh;
+      } else {
+        console.error('PLANET_STL FAILED: '+p.name+' model='+p.model+' — placeholder sphere remains! color=#'+new THREE.Color(p.color).getHexString());
       }
     });
   } else {
@@ -342,20 +355,11 @@ planets.forEach((p,i)=>{
   scene.add(mesh);
   planetMeshes.push(mesh);
 
-  // 名称标签 (Sprite)
-  const labelCanvas = document.createElement('canvas');
-  labelCanvas.width = 256; labelCanvas.height = 64;
-  const ctx = labelCanvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.fillRect(0,0,256,64);
-  ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = '#ffffff'; ctx.fillText(p.cn, 128, 36);
-  const labelTex = new THREE.CanvasTexture(labelCanvas);
-  labelTex.minFilter = THREE.LinearFilter;
-  const labelSprite = new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex, transparent:true, depthTest:false}));
-  labelSprite.scale.set(p.size*3, p.size*0.75, 1);
-  labelSprite.position.y = p.size * 1.6;
-  labelSprite.userData = {isLabel:true};
-  mesh.add(labelSprite);
+  // 名称标签 (高清Sprite，半透明底+描边)
+  var plabel = makeSmallLabel(p.cn, '#ffffff');
+  plabel.scale.set(p.size*4, p.size*1.0, 1);
+  plabel.position.y = p.size * 1.8;
+  mesh.add(plabel);
 
   // 纹理（STL模型不需要纹理加载）
   if(p.tex && !p.model){
@@ -387,14 +391,25 @@ planets.forEach((p,i)=>{
     });
   }
 
-  // 卫星
-  (p.moons||[]).forEach(m=>{
+  // 卫星（带名称标签）
+  (p.moons||[]).forEach((m, mi)=>{
     const mGeo = new THREE.SphereGeometry(m.size, 24, 12);
     const mMat = new THREE.MeshPhongMaterial({color:m.color, shininess:m.tex?5:3, specular:m.tex?0x111111:0x000000});
     const mMesh = new THREE.Mesh(mGeo, mMat);
-    const ma = Math.random()*Math.PI*2;
+    // 确定性初始角度：用卫星名+行星名做种子，两边屏幕一致
+    var seedStr = p.name + '_' + m.name;
+    var hash = 0;
+    for(var si=0; si<seedStr.length; si++){ hash = ((hash<<5)-hash)+seedStr.charCodeAt(si); hash|=0; }
+    const ma = (Math.abs(hash)/2147483648)*Math.PI*2;
     mMesh.userData = {moon:m, angle:ma};
     mMesh.position.set(Math.cos(ma)*m.orbit, 0, Math.sin(ma)*m.orbit);
+    // 卫星名称标签
+    if(m.cn){
+      var mlbl = makeSmallLabel(m.cn, '#aaccff');
+      mlbl.position.y = m.size * 2.0;
+      mlbl.scale.set(m.size*3, m.size*0.8, 1);
+      mMesh.add(mlbl);
+    }
     mesh.add(mMesh);
     if(m.tex){
       const texUrl=m.tex.startsWith('http')?m.tex:TEX+m.tex;
@@ -404,19 +419,24 @@ planets.forEach((p,i)=>{
     }
   });
 
-  // 轨道线
-  const pts = [];
-  for(let a=0;a<=256;a++) pts.push(new THREE.Vector3(Math.cos(a/256*Math.PI*2)*p.orbit, 0, Math.sin(a/256*Math.PI*2)*p.orbit));
-  scene.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({color:new THREE.Color().setHSL(i/12,0.4,0.35), transparent:true, opacity:0.25})
-  ));
+  // 轨道线 — 只为正规行星创建，STL小行星不画轨道环
+  if (!p.model) {
+    orbitCount++;
+    const pts = [];
+    for(let a=0;a<=256;a++) pts.push(new THREE.Vector3(Math.cos(a/256*Math.PI*2)*p.orbit, 0, Math.sin(a/256*Math.PI*2)*p.orbit));
+    // 8 个正规行星用 0~0.875 色相均匀分布，完全避开棕褐色
+    var orbitHue = (orbitCount-1) / 8;
+    var orbitColor = new THREE.Color().setHSL(orbitHue, 0.50, 0.42);
+    scene.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:orbitColor, transparent:true, opacity:0.28})
+    ));
+  }
 });
 
 // 主屏初始状态：只显示焦点星球
 if (IS_MAIN_SCREEN) {
   updateMainScreenVisibility();
-  // 延迟调用 onSelectPlanet，与点击行为完全一致
   if (FOCUS_PLANET) {
     setTimeout(function() { onSelectPlanet(FOCUS_PLANET); }, 300);
   }
@@ -533,16 +553,74 @@ renderer.domElement.addEventListener('wheel', function(e) {
 }, {passive: false});
 
 // 被 MainActivity 调用：切换聚焦星球（主屏）
-// 主屏：只显示焦点星球，隐藏其余
+// 主屏：只显示焦点星球+其卫星+其光环，隐藏所有其他对象以提升性能
 function updateMainScreenVisibility() {
+  var showAll = !IS_MAIN_SCREEN;
+  
+  // 行星及其子节点（卫星、标签）
   planetMeshes.forEach(function(m) {
     var p = m.userData.planet;
-    m.visible = !IS_MAIN_SCREEN || (p && p.name === FOCUS_PLANET);
-    // 同时切换子节点（标签、光环等）
+    m.visible = showAll || (p && p.name === FOCUS_PLANET);
     m.children.forEach(function(c) { c.visible = m.visible; });
   });
-  // 太阳特殊处理
-  if (typeof sun !== 'undefined') sun.visible = !IS_MAIN_SCREEN || FOCUS_PLANET === 'Sun';
+  
+  // 太阳
+  if (typeof sun !== 'undefined') sun.visible = showAll || FOCUS_PLANET === 'Sun';
+  
+  // 太阳光晕
+  scene.children.forEach(function(c){
+    if(c.material && c.material.color && c.material.color.getHex()===0xff8800 && c.material.transparent){
+      c.visible = showAll;
+    }
+  });
+  
+  // 轨道线 — 主屏全隐藏
+  scene.children.forEach(function(c){
+    if(c.isLine) c.visible = showAll;
+  });
+  
+  // 光环（独立对象，如土星环）— 主屏只显示焦点行星的环
+  if(typeof ringMeshes !== 'undefined'){
+    ringMeshes.forEach(function(r){
+      if(showAll){
+        r.visible = true;
+      } else {
+        r.visible = (r.userData.planetName === FOCUS_PLANET);
+      }
+    });
+  }
+  
+  // Transit 小行星组 — 主屏：聚焦木星时可见（能看到被捕获的小行星绕转）
+  if(typeof asteroidGroup !== 'undefined') {
+    asteroidGroup.visible = showAll || FOCUS_PLANET === 'Jupiter';
+  }
+  
+  // 小行星带 & 柯伊伯带（Points） — 主屏全隐藏
+  scene.children.forEach(function(c){
+    if(c.userData && c.userData.isBelt) c.visible = showAll;
+  });
+  
+  // 撞击特效 — 主屏也显示（木星撞击引力波+坑需要同步可见）
+  if(typeof impactEffects !== 'undefined'){
+    for(var ei=0; ei<impactEffects.length; ei++){
+      impactEffects[ei].visible = showAll || FOCUS_PLANET === 'Jupiter';
+    }
+  }
+  
+  // 星空背景点 — 主屏隐藏（星球特写不需要）
+  scene.children.forEach(function(c){
+    if(c.isPoints && !c.userData.isBelt){
+      var mat = c.material;
+      if(mat && mat.sizeAttenuation===false && mat.color && mat.color.getHex()===0xccccff){
+        c.visible = showAll;
+      }
+    }
+  });
+  
+  // Bloom 光晕 Sprite — 只在副屏显示
+  scene.children.forEach(function(c){
+    if(c.isSprite && c.renderOrder===999) c.visible = showAll;
+  });
 }
 
 // 触摸拾取已整合到 touchend 处理器中
@@ -553,13 +631,16 @@ function onSelectPlanet(name) {
     FOCUS_PLANET = name;
     if (name === 'Sun') {
       focusTarget.set(0, 0, 0);
-      focusDistance = 3.5 * 2.0;  // 太阳半径3.5，放大
+      focusDistance = 7.0;
     } else {
       var fm = planetMeshes.find(function(m) { return m.userData.planet.name === name; });
       if (fm) {
         focusTarget.copy(fm.position);
-        focusDistance = (fm.userData.planet.size || 1.0) * 2.0;
-        focusDistance = Math.max(1.5, Math.min(30, focusDistance));
+        var pdata = fm.userData.planet;
+        // 太阳系比例尺：行星大小0.5~2.0，距离需足够远才能看到全貌
+        var ringExtra = pdata.ring ? pdata.size * 3.0 : 0;
+        focusDistance = pdata.size * 3.5 + ringExtra;
+        focusDistance = Math.max(4.0, Math.min(40, focusDistance));
       }
     }
     updateMainScreenVisibility();
@@ -571,11 +652,13 @@ function onSelectPlanet(name) {
   } else {
     try { Android.onPlanetSelected(name); } catch(e) {}
   }
+  // 主屏同步显示信息卡片
+  if(IS_MAIN_SCREEN) showSwInfo(name);
 }
 
 const clock = new THREE.Clock();
 // 收集所有光环（独立对象，非行星子节点）
-const ringMeshes = [];
+var ringMeshes = [];
 scene.traverse(c => { if(c.userData && c.userData.isRing) ringMeshes.push(c); });
 
 
@@ -724,14 +807,34 @@ randomBlueSpot();randomYellowSpot();
 // 使用 STL 3D 模型，与 planets[] 中已验证的加载方式一致
 
 var asteroidGroup = new THREE.Group(); scene.add(asteroidGroup);
-var CAPTURE_RADIUS = 12.0;
-var CAPTURE_THRESHOLD = 5.0;
+var CAPTURE_RADIUS = 15.0;
+var CAPTURE_THRESHOLD = 6.0;
 var asteroids = [];
 var impactEffects = [];
 
-// 岩石色板
-var rockColors = [0x888888,0x998877,0x776655,0x887766,0x999999,0xaa9977,0x665544,0x778899,0x997766,0x887788,
-                  0x666666,0x554433,0x777777,0x887755,0x998866,0x445566,0x776644,0x8899aa,0x998877,0x555544];
+// 小标签工厂 — 纯文字无背景
+function makeSmallLabel(text, colorHex) {
+  var c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  var ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 512, 128);
+  ctx.font = 'bold 56px monospace'; ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = colorHex || '#ffffff';
+  ctx.fillText(text, 256, 64);
+  var tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  var sprite = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false, depthWrite: false}));
+  sprite.scale.set(3.0, 0.75, 1);
+  sprite.renderOrder = 999;
+  sprite.userData = {isLabel: true, labelText: text};
+  return sprite;
+}
+
+// 岩石色板 — 中亮灰调，Mali GPU 也能看清
+var rockColors = [0xaaaaaa,0xb0b0b0,0xa0a0a0,0xababab,0xb5b5b5,0xa5a5a5,0x9e9e9e,0xa8b0b8,0xa8b8a8,0xb0a0b0,
+                  0x989898,0xa8a8a8,0xa2a2a2,0xacacac,0xb2b2b2,0x9a9a9a,0xa6a6a6,0xa8b0c0,0xa5a5a5,0x9c9c9c];
 
 // 6个真实STL小行星模型路径（已验证在设备上正常3D渲染）
 var STL_MODELS = [
@@ -743,98 +846,64 @@ var STL_MODELS = [
   'models/asteroid_rq36.stl'
 ];
 
-// 通用小行星（火星-木星带穿梭）— 使用STL真实模型
-for (var ai=0; ai<12; ai++) {
-  var modelPath = STL_MODELS[ai % STL_MODELS.length];
-  var size = 0.6 + Math.random()*0.5;
-  var a = 21 + Math.random()*10;
-  var e = 0.10 + Math.random()*0.40;
+// 6颗唯一STL小行星 — 每颗一种模型，不重复
+for (var ai=0; ai<6; ai++) {
+  var modelPath = STL_MODELS[ai];
+  var size = 0.7 + Math.random()*0.4;
+  var isImpactor = (ai >= 3);  // 前3颗 belt，后3颗 Jupiter-crossing
+  var a = isImpactor ? (32 + Math.random()*8) : (21 + Math.random()*8);
+  var e = isImpactor ? (0.40 + Math.random()*0.35) : (0.10 + Math.random()*0.30);
   var iAng = (Math.random()-0.5)*0.5;
   var M0 = Math.random()*Math.PI*2;
-  var T = 120 + Math.random()*350;
+  var T = isImpactor ? (26 + Math.random()*10) : (150 + Math.random()*300);
   var seed = Math.random()*1000;
-  
-  // 先用简单球体占位
+  var labelText = isImpactor ? ('I'+(ai-3)) : ('B'+ai);
+  var labelColor = isImpactor ? '#ff8844' : '#ffcc00';
+  // 占位球体
   var geo = new THREE.SphereGeometry(size, 8, 5);
   var colorIdx = Math.floor(Math.abs(seed*7919)) % rockColors.length;
   var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
   var mesh = new THREE.Mesh(geo, mat);
+  var label = makeSmallLabel(labelText, labelColor);
+  label.position.y = size * 2.0;
+  label.scale.set(size*4, size*1, 1);
+  mesh.add(label);
   asteroidGroup.add(mesh);
   
   asteroids.push({
     mesh:mesh, a:a, e:e, i:iAng, M0:M0, T:T, seed:seed,
-    captured:false, jupOrbit:0, jupAngle:0, jupDist:0
+    captured:false, jupOrbit:0, jupAngle:0, jupDist:0,
+    _rockColor: rockColors[colorIdx]
   });
   
   // 异步加载真实STL模型替换占位球
-  (function(mesh, modelPath, size, ai){
+  (function(mesh, modelPath, size, ai, labelText, labelColor){
     loadSTLModel(modelPath, rockColors[ai%rockColors.length], size, function(stlMesh){
       if(stlMesh){
-        console.log('STL loaded #'+ai+': '+modelPath+' verts='+stlMesh.geometry.attributes.position.count);
+        stlMesh.material = new THREE.MeshLambertMaterial({color:rockColors[ai%rockColors.length]});
         var box = new THREE.Box3().setFromObject(stlMesh);
         var sz = box.getSize(new THREE.Vector3());
         var maxDim = Math.max(sz.x, sz.y, sz.z);
         if(maxDim>0) stlMesh.scale.setScalar(size*1.0/maxDim);
         stlMesh.position.copy(mesh.position);
         stlMesh.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
-        asteroidGroup.remove(mesh);
-        asteroidGroup.add(stlMesh);
-        // 更新引用
-        for(var k=0; k<asteroids.length; k++){
-          if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
-        }
-      } else {
-        // STL加载失败：删除占位球
-        asteroidGroup.remove(mesh);
-      }
-    });
-  })(mesh, modelPath, size, ai);
-}
-
-// 撞击专用小行星：轨道对准木星(28)，快速周期 30-90s — 使用STL模型
-for (var ai=0; ai<8; ai++) {
-  var modelPath = STL_MODELS[(ai+2) % STL_MODELS.length];
-  var size = 0.5 + Math.random()*0.5;
-  var a = 27 + Math.random()*4;
-  var e = 0.30 + Math.random()*0.35;
-  var iAng = (Math.random()-0.5)*0.3;
-  var M0 = Math.random()*Math.PI*2;
-  var T = 30 + Math.random()*60;
-  var seed = Math.random()*2000+1000;
-  
-  var geo = new THREE.SphereGeometry(size, 8, 5);
-  var colorIdx = Math.floor(Math.abs(seed*517)) % rockColors.length;
-  var mat = new THREE.MeshLambertMaterial({color:rockColors[colorIdx]});
-  var mesh = new THREE.Mesh(geo, mat);
-  asteroidGroup.add(mesh);
-  
-  asteroids.push({
-    mesh:mesh, a:a, e:e, i:iAng, M0:M0, T:T, seed:seed,
-    captured:false, jupOrbit:0, jupAngle:0, jupDist:0
-  });
-  
-  (function(mesh, modelPath, size, ai){
-    loadSTLModel(modelPath, rockColors[(ai+8)%rockColors.length], size, function(stlMesh){
-      if(stlMesh){
-        var box = new THREE.Box3().setFromObject(stlMesh);
-        var sz = box.getSize(new THREE.Vector3());
-        var maxDim = Math.max(sz.x, sz.y, sz.z);
-        if(maxDim>0) stlMesh.scale.setScalar(size*1.0/maxDim);
-        stlMesh.position.copy(mesh.position);
-        stlMesh.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+        var newLabel = makeSmallLabel(labelText, labelColor);
+        newLabel.position.y = size * 2.0;
+        newLabel.scale.set(size*4, size*1, 1);
+        stlMesh.add(newLabel);
         asteroidGroup.remove(mesh);
         asteroidGroup.add(stlMesh);
         for(var k=0; k<asteroids.length; k++){
-          if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; break; }
+          if(asteroids[k].mesh === mesh) { asteroids[k].mesh = stlMesh; asteroids[k]._stlScale = size*1.0/maxDim; break; }
         }
       } else {
         asteroidGroup.remove(mesh);
       }
     });
-  })(mesh, modelPath, size, ai);
+  })(mesh, modelPath, size, ai, labelText, labelColor);
 }
 
-console.log('ASTEROID: '+asteroids.length+' STL-model rocks (12 belt + 8 impact) — 6 unique shapes');
+console.log('ASTEROID: '+asteroids.length+' unique STL rocks — 6 models, 0 duplicates');
 
 function solveKepler(M, e) {
   var E = M;
@@ -928,187 +997,68 @@ function animate(){
     if (ast.captured) {
       // Captured: orbit Jupiter with fast decay + impact flash
       ast.jupAngle += dt * (2*Math.PI) / 8;   // faster orbit
-      ast.jupDist -= dt * 0.08;               // faster decay (impact in ~15s)
+      ast.jupDist -= dt * 0.05;               // 慢速螺旋（可见坠落过程）
       if (ast.jupDist < 2.2) {
-        // ===== NUCLEAR-LEVEL IMPACT: Fireball + Shockwave + Crater + Ejecta =====
-        // References: WebGL Explosion VFX, EasyCraterSim, FireExplosionShader
+        // ===== 撞击：引力波 + 撞击坑 =====
         var impactPos = ast.mesh.position.clone();
         var toJup = impactPos.clone().sub(jupPos).normalize();
         var surfPt = jupPos.clone().add(toJup.clone().multiplyScalar(2.15));
-        var up = toJup.clone();  // local "up" direction from Jupiter center
         
-        // 1. Nuclear Fireball (custom shader: noise-displaced sphere + thermal gradient)
-        var fbGeo = new THREE.SphereGeometry(0.3, 24, 24);
-        var fbVert = [
-          'varying vec3 vPos; varying vec3 vNorm;',
-          'uniform float uTime;',
-          'float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}',
-          'float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);',
-          'return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),',
-          'mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}',
-          'void main(){',
-          'vec3 pos=position;',
-          'float n=noise(pos*4.0+uTime*2.0)*0.3+noise(pos*8.0-uTime*1.5)*0.15;',
-          'pos+=normal*n;',
-          'gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);',
-          'vPos=pos; vNorm=normal;}'
-        ].join('\n');
-        var fbFrag = [
-          'varying vec3 vPos; varying vec3 vNorm;',
-          'uniform float uTime; uniform float uAlpha;',
-          'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
-          'float fbm(vec2 p){float v=0.0,a=0.5;vec2 s=vec2(1.0);',
-          'for(int i=0;i<3;i++){v+=a*hash(p*s);a*=0.5;s*=2.1;}return v;}',
-          'void main(){',
-          'float d=length(vPos)/0.3;',
-          'float n=fbm(vPos.xy*3.0+uTime*0.5)*0.5+fbm(vPos.yz*5.0-uTime*0.3)*0.3;',
-          'float alpha=exp(-d*d*2.5)*(1.0-smoothstep(0.0,1.0,d))*uAlpha;',
-          'alpha+=n*0.3*alpha;',
-          'vec3 col=mix(vec3(1.0,0.95,0.8),mix(vec3(1.0,0.5,0.05),vec3(0.15,0.02,0.0),d),d);',
-          'col+=n*vec3(0.3,0.15,0.0);',
-          'gl_FragColor=vec4(col,alpha);}'
-        ].join('\n');
-        var fbUnis = {uTime:{value:0}, uAlpha:{value:1.0}};
-        var fbMat = new THREE.ShaderMaterial({
-          vertexShader:fbVert, fragmentShader:fbFrag, uniforms:fbUnis,
-          blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
-        });
-        var fireball = new THREE.Mesh(fbGeo, fbMat);
-        fireball.position.copy(surfPt);
-        fireball.renderOrder = 999;
-        fireball.userData = {life:5.0, age:0, type:'fireball', matRef:fbMat};
-        scene.add(fireball);
-        impactEffects.push(fireball);
-        
-        // 2. Shockwave Ring (expanding torus)
-        var swGeo = new THREE.TorusGeometry(0.15, 0.04, 16, 32);
-        var swMat = new THREE.MeshBasicMaterial({
-          color:0xffffff, transparent:true, opacity:0.9,
-          depthTest:false, depthWrite:false, blending:THREE.AdditiveBlending
-        });
-        var shockwave = new THREE.Mesh(swGeo, swMat);
-        shockwave.position.copy(surfPt);
-        shockwave.lookAt(jupPos);
-        shockwave.renderOrder = 998;
-        shockwave.userData = {life:3.0, age:0, type:'shockwave'};
-        scene.add(shockwave);
-        impactEffects.push(shockwave);
-        
-        // 3. Impact Crater Decal (geodesic patch on Jupiter surface)
-        var craterPatch = (function() {
-          // Create a small patch of Jupiter's surface with crater deformation
-          var R = 2.0;  // Jupiter radius
-          var craterDia = 0.4 + Math.random()*0.4;
-          var craterDepth = craterDia * 0.18;
-          var rimHeight = craterDia * 0.04;
-          var segments = 16;
-          var patchGeo = new THREE.BufferGeometry();
-          var verts = [], indices = [];
-          var cx = 0, cy = R, cz = 0;  // North pole of the patch
-          // We'll create a disc and then project onto sphere
-          for (var ri=0; ri<=segments; ri++) {
-            for (var ai=0; ai<=segments*2; ai++) {
-              var r = (ri/segments) * craterDia * 0.8;
-              var a = (ai/(segments*2)) * Math.PI * 2;
-              var px = Math.cos(a) * r;
-              var pz = Math.sin(a) * r;
-              // Crater profile (EasyCraterSim model)
-              var dist = r / (craterDia*0.8);
-              var h = 0;
-              if (dist < 0.3) h = -craterDepth * (1.0 - dist/0.3);  // deep bowl
-              else if (dist < 0.6) h = -craterDepth * (1.0 - dist/0.3) * (1.0 - (dist-0.3)/0.3);  // transition
-              else if (dist < 1.0) h = rimHeight * (dist-0.6)/0.4;  // raised rim
-              // Project disc point onto sphere surface
-              var sx = px, sy = R + h, sz = pz;
-              var sl = Math.sqrt(sx*sx + sy*sy + sz*sz);
-              verts.push(sx/sl*R, sy/sl*R, sz/sl*R);
-            }
-          }
-          for (var ri=0; ri<segments; ri++) {
-            for (var ai=0; ai<segments*2; ai++) {
-              var a = ri*(segments*2+1)+ai, b = a+1, c = a+(segments*2+1), d = c+1;
-              indices.push(a,b,d, a,d,c);
-            }
-          }
-          patchGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-          patchGeo.setIndex(indices);
-          patchGeo.computeVertexNormals();
-          var patchMat = new THREE.MeshPhongMaterial({
-            color:0x221100, emissive:0x110000, emissiveIntensity:0.5,
-            shininess:0, flatShading:false, depthTest:true, depthWrite:true,
-            transparent:true, opacity:1.0
+        // 1. 引力波 — 4层 Torus 环 + Shader 波纹（复刻 impact-v4 原设计）
+        for (var wi=0; wi<4; wi++) {
+          var r0 = 0.3 + wi*0.25;
+          var wGeo = new THREE.TorusGeometry(r0, 0.04-(wi*0.006), 20, 60);
+          var gVert = 'varying vec3 vP;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;vP=position;}';
+          var gFrag = 'varying vec3 vP;uniform float uT;uniform float uA;uniform float uW;void main(){float d=abs(length(vP.xy)/uW-0.5)*2.0;float ring=exp(-d*d*12.0);float rip=sin(length(vP.xy)*15.0-uT*3.0)*0.5+sin(length(vP.xy)*8.0+uT*1.5)*0.3;float a=ring*(0.4+rip*0.3)*uA;vec3 col=mix(vec3(0.2,0.4,0.8),vec3(0.6,0.75,1.0),ring+rip*0.5);gl_FragColor=vec4(col,a);}';
+          var gUnis = {uT:{value:0}, uA:{value:0.8-wi*0.15}, uW:{value:r0}};
+          var wMat = new THREE.ShaderMaterial({
+            vertexShader: gVert, fragmentShader: gFrag, uniforms: gUnis,
+            transparent: true, depthWrite: false,
+            blending: THREE.AdditiveBlending
           });
-          var patch = new THREE.Mesh(patchGeo, patchMat);
-          patch.position.copy(surfPt);
-          patch.lookAt(jupPos);
-          patch.renderOrder = 1;
-          patch.userData = {life:60, age:0, type:'crater'};
-          scene.add(patch);
-          impactEffects.push(patch);
-          return patch;
-        })();
-        
-        // 4. Ejecta Plume (physics-based ballistic particles)
-        for (var ei=0; ei<80; ei++) {
-          var eSize = 0.02 + Math.random()*0.10;
-          var eGeo = new THREE.SphereGeometry(eSize, 4, 4);
-          var hue = 0.06 + Math.random()*0.10;  // yellow→red
-          var eMat = new THREE.MeshBasicMaterial({
-            color:new THREE.Color().setHSL(hue, 1, 0.5+Math.random()*0.5),
-            transparent:true, opacity:1, depthTest:false, depthWrite:false,
-            blending:THREE.AdditiveBlending
-          });
-          var ejecta = new THREE.Mesh(eGeo, eMat);
-          ejecta.position.copy(surfPt);
-          ejecta.renderOrder = 997;
-          // Ballistic velocity: outward + upward (relative to Jupiter surface)
-          var outDir = toJup.clone();
-          var tanDir = new THREE.Vector3(-outDir.z, 0, outDir.x).normalize();
-          var tanDir2 = new THREE.Vector3().crossVectors(outDir, tanDir).normalize();
-          var angle = Math.random()*Math.PI*2;
-          var elev = Math.random()*Math.PI*0.45;  // 0-45° elevation
-          var speed = 0.8 + Math.random()*5.0;
-          var vel = outDir.clone().multiplyScalar(Math.sin(elev))
-            .add(tanDir.clone().multiplyScalar(Math.cos(angle)*Math.cos(elev)))
-            .add(tanDir2.clone().multiplyScalar(Math.sin(angle)*Math.cos(elev)))
-            .normalize().multiplyScalar(speed);
-          ejecta.userData = {life:3+Math.random()*8, age:0, type:'ejecta', vel:vel};
-          scene.add(ejecta);
-          impactEffects.push(ejecta);
+          var wave = new THREE.Mesh(wGeo, wMat);
+          wave.position.copy(surfPt);
+          wave.lookAt(surfPt.clone().add(new THREE.Vector3(0,1,0)));
+          wave.renderOrder = 996-wi;
+          wave.userData = {life: 6.0, age: wi*0.55, type: 'gravityWave', delay: wi*0.55, matRef: wMat, baseR: r0};
+          scene.add(wave);
+          impactEffects.push(wave);
         }
         
-        // 5. Thermal glow particles (slow-rising, long-lasting)
-        for (var ti=0; ti<40; ti++) {
-          var tGeo = new THREE.SphereGeometry(0.03+Math.random()*0.05, 4, 4);
-          var tMat = new THREE.MeshBasicMaterial({
-            color:new THREE.Color().setHSL(0.08, 0.8, 0.6+Math.random()*0.4),
-            transparent:true, opacity:1, depthTest:false, depthWrite:false,
-            blending:THREE.AdditiveBlending
-          });
-          var therm = new THREE.Mesh(tGeo, tMat);
-          therm.position.copy(surfPt);
-          therm.renderOrder = 996;
-          var thermVel = toJup.clone().multiplyScalar(0.3+Math.random()*1.5)
-            .add(new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8));
-          therm.userData = {life:5+Math.random()*15, age:0, type:'thermal', vel:thermVel};
-          scene.add(therm);
-          impactEffects.push(therm);
-        }
+        // 2. 撞击坑 — 挂在木星 mesh 下跟随公转
+        var craterGeo = new THREE.CircleGeometry(0.25, 32);
+        var craterMat = new THREE.MeshBasicMaterial({
+          color: 0x1a0800, side: THREE.DoubleSide,
+          transparent: true, opacity: 0.85,
+          depthTest: true, depthWrite: true
+        });
+        var crater = new THREE.Mesh(craterGeo, craterMat);
+        // 转为木星本地坐标
+        var localCrater = surfPt.clone().sub(jupPos);
+        crater.position.copy(localCrater);
+        crater.lookAt(new THREE.Vector3(0,0,0));  // 朝向木星中心（本地原点）
+        crater.renderOrder = 1;
+        crater.userData = {life: 45, age: 0, type: 'crater'};
+        // 挂在木星 mesh 下，自动跟随公转
+        var jupMesh = planetMeshes.find(function(m){return m.userData.planet.name==='Jupiter';});
+        if(jupMesh){ jupMesh.add(crater); } else { scene.add(crater); }
+        impactEffects.push(crater);
         
-        console.log('NUCLEAR IMPACT: fireball+shockwave+crater+80ejecta+40thermal');
+        console.log('IMPACT: gravity wave + crater at Jupiter');
         
-        // Reset asteroid
+        // 重置小行星：从外太阳系重新出发
         ast.captured = false;
-        ast.a = 27 + Math.random()*4;
-        ast.e = 0.30 + Math.random()*0.35;
+        ast.a = 32 + Math.random()*6;
+        ast.e = 0.45 + Math.random()*0.3;
+        ast.i = (Math.random()-0.5)*0.4;
         ast.M0 = Math.random()*Math.PI*2;
-        ast.T = 30 + Math.random()*60;
-        ast.mesh.material = new THREE.MeshLambertMaterial({color: new THREE.Color().setHSL(0.06+Math.random()*0.04, 0.3, 0.3+Math.random()*0.4)});
-        ast.mesh.material.transparent = false;
-        // Hide asteroid (it "disintegrated")
+        ast.T = 28 + Math.random()*8;
+        // 恢复 STL 原始比例（不是 setScalar(1)！）
+        if (ast._stlScale) ast.mesh.scale.setScalar(ast._stlScale);
         ast.mesh.visible = false;
-        setTimeout(function() { if (ast.mesh) ast.mesh.visible = true; }, 1500);
-        console.log('IMPACT: Fireball + ejecta + crater at Jupiter surface!');
+        setTimeout(function() { if (ast.mesh) ast.mesh.visible = true; }, 2000);
+        // 撞击后直接跳到自由轨道分支（不执行下面的captured位置设置）
+        return;
       }
       ast.mesh.position.set(
         jupPos.x + Math.cos(ast.jupAngle)*ast.jupDist,
@@ -1140,85 +1090,121 @@ function animate(){
           ast.captured = true;
           ast.jupDist = dist;
           ast.jupAngle = Math.atan2(dz, dx);
-          ast.mesh.material = new THREE.MeshBasicMaterial({
-            color: 0xff8844,
-            transparent: true, opacity: 0.9
-          });
-          console.log('ASTEROID: Captured by Jupiter! dist='+dist.toFixed(1));
+          console.log('ASTEROID: Captured! dist='+dist.toFixed(1));
         }
       }
     }
   });
   
-  // -- Impact effects processing (fireball, shockwave, crater, ejecta, thermal) --
+  // ===== 全场景碰撞检测：Transit小行星 vs 所有球体 =====
+  if (!IS_MAIN_SCREEN) {  // 仅副屏做碰撞检测（主屏聚焦单星球无此需求）
+    // 收集所有碰撞体：位置 + 半径
+    var bodies = [];
+    // 太阳
+    bodies.push({pos: new THREE.Vector3(0,0,0), r: 3.5, name: 'Sun'});
+    // 行星 + STL小行星
+    for (var bi=0; bi<planetMeshes.length; bi++) {
+      var pm = planetMeshes[bi];
+      if (!pm.visible) continue;
+      bodies.push({pos: pm.position.clone(), r: pm.userData.planet.size, name: pm.userData.planet.name});
+      // 卫星
+      for (var ci=0; ci<pm.children.length; ci++) {
+        var child = pm.children[ci];
+        if (child.userData && child.userData.moon) {
+          var worldPos = child.position.clone();
+          pm.localToWorld(worldPos);
+          bodies.push({pos: worldPos, r: child.userData.moon.size, name: child.userData.moon.name});
+        }
+      }
+    }
+    
+    // 检测每颗 transit 小行星
+    for (var ai=0; ai<asteroids.length; ai++) {
+      var ast = asteroids[ai];
+      if (!ast.mesh.visible || ast.captured) continue;  // 已隐藏或已被捕获的跳过
+      var ap = ast.mesh.position.clone();
+      var ar = 0.5;  // transit 小行星近似半径
+      
+      for (var bi=0; bi<bodies.length; bi++) {
+        var b = bodies[bi];
+        var ddx = ap.x - b.pos.x, ddy = ap.y - b.pos.y, ddz = ap.z - b.pos.z;
+        var dd = Math.sqrt(ddx*ddx + ddy*ddy + ddz*ddz);
+        if (dd < ar + b.r) {
+          // 💥 碰撞！白光闪烁 + 小行星重置
+          var flashGeo = new THREE.SphereGeometry(ar+b.r, 16, 16);
+          var flashMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:1, depthTest:false, depthWrite:false});
+          var flash = new THREE.Mesh(flashGeo, flashMat);
+          flash.position.copy(ap).add(b.pos).multiplyScalar(0.5);
+          flash.userData = {life:0.8, age:0, type:'collisionFlash'};
+          scene.add(flash);
+          impactEffects.push(flash);
+          
+          console.log('COLLISION: asteroid hit '+b.name);
+          
+          // 重置小行星
+          ast.captured = false;  // 确保脱离捕获状态
+          ast.a = 21 + Math.random()*15;
+          ast.e = 0.15 + Math.random()*0.4;
+          ast.i = (Math.random()-0.5)*0.5;
+          ast.M0 = Math.random()*Math.PI*2;
+          ast.T = 80 + Math.random()*200;
+          ast.mesh.visible = false;
+          var resetMesh = ast.mesh;
+          setTimeout(function(){ if(resetMesh) resetMesh.visible = true; }, 1500);
+          break;  // 一次碰撞只处理第一个命中
+        }
+      }
+    }
+  }
+  
+  // -- 撞击特效处理：引力波扩散 + 撞击坑 --
   for (var ei=impactEffects.length-1; ei>=0; ei--) {
     var obj = impactEffects[ei];
     obj.userData.age += dt;
     var t = obj.userData.type;
     var a = obj.userData.age;
     var l = obj.userData.life;
-    var progress = Math.min(a / l, 1.0);
     
-    if (t === 'fireball') {
-      // Nuclear fireball: expand with noise, fade
-      var s = 0.3 + progress * progress * 10;  // accelerating expansion
-      obj.scale.set(s, s, s);
-      obj.userData.matRef.uniforms.uTime.value = a;
-      obj.userData.matRef.uniforms.uAlpha.value = progress < 0.15 ? 1.0 : Math.max(0, 1.0 - (progress-0.15)*(progress-0.15)*1.4);
-    } else if (t === 'shockwave') {
-      // Expanding ring: starts slow, accelerates, fades
-      var swS = 0.5 + progress * progress * 15;
-      obj.scale.set(swS, swS, swS);
-      obj.material.opacity = progress < 0.1 ? 1.0 : Math.max(0, (1.0 - progress) * 1.2);
-      obj.material.color.setHSL(0.08, 0.5, 1.0 - progress);
+    if (t === 'collisionFlash') {
+      // 碰撞白光：快速膨胀+消退
+      var cp = Math.min(a / l, 1.0);
+      var fs = 1 + cp * 4;
+      obj.scale.set(fs, fs, fs);
+      obj.material.opacity = 1 - cp;
+      if (cp >= 1.0) {
+        scene.remove(obj); obj.geometry.dispose(); obj.material.dispose();
+        impactEffects.splice(ei, 1);
+      }
+    } else if (t === 'gravityWave') {
+      // 引力波：Torus 环扩散 + Shader 波纹脉动（复刻 impact-v4）
+      if (a < obj.userData.delay) continue;
+      var act = a - obj.userData.delay;
+      var progress = Math.min(act / l, 1.0);
+      // 环向外扩散
+      var wScale = 0.5 + progress * 4.0;
+      obj.scale.set(wScale, wScale, wScale);
+      // Shader 时间驱动波纹
+      if (obj.userData.matRef) obj.userData.matRef.uniforms.uT.value = a;
+      obj.userData.matRef.uniforms.uA.value = 0.8 * (1.0 - progress);
+      if (progress >= 1.0) {
+        scene.remove(obj);
+        obj.geometry.dispose();
+        obj.material.dispose();
+        impactEffects.splice(ei, 1);
+      }
     } else if (t === 'crater') {
-      // Crater stays visible, slowly darkens
-      if (a > 30 && a < 60) {
-        obj.material.emissiveIntensity = Math.max(0, 0.5 - (a-30)/60);
+      // 撞击坑：缓慢消退（挂在木星 mesh 下，自动跟随公转）
+      var progress = Math.min(a / l, 1.0);
+      if (progress > 0.5) {
+        obj.material.opacity = 0.85 * (1.0 - (progress-0.5)*1.6);
       }
       if (progress >= 1.0) {
-        obj.material.opacity = 0.3;  // never fully disappear, leave a scar
-        continue;  // don't remove
+        if(obj.parent) obj.parent.remove(obj);
+        obj.geometry.dispose();
+        obj.material.dispose();
+        impactEffects.splice(ei, 1);
       }
-    } else if (t === 'ejecta') {
-      // Ballistic ejecta: fly outward, gravity pulls toward Jupiter
-      obj.position.x += obj.userData.vel.x * dt;
-      obj.position.y += obj.userData.vel.y * dt;
-      obj.position.z += obj.userData.vel.z * dt;
-      // Gravity toward Jupiter
-      var toCenter = jupPos.clone().sub(obj.position);
-      var gDist = toCenter.length();
-      if (gDist > 0.01) {
-        toCenter.normalize().multiplyScalar(0.5 * dt / (gDist*gDist + 1.0));
-        obj.userData.vel.add(toCenter);
-      }
-      obj.userData.vel.multiplyScalar(0.995);
-      obj.material.opacity = Math.max(0, 1.0 - progress*progress);
-      obj.scale.multiplyScalar(0.998);
-      obj.material.color.setHSL(0.06+progress*0.06, 1, 1-progress*0.7);
-    } else if (t === 'thermal') {
-      // Thermal glow: rise slowly, expand, fade
-      obj.position.x += obj.userData.vel.x * dt;
-      obj.position.y += obj.userData.vel.y * dt;
-      obj.position.z += obj.userData.vel.z * dt;
-      obj.userData.vel.multiplyScalar(0.99);
-      var thS = 1 + progress * 4;
-      obj.scale.set(thS, thS, thS);
-      obj.material.opacity = Math.max(0, (1.0 - progress) * 0.7);
-      obj.material.color.setHSL(0.08, 0.6, 1-progress*0.5);
     }
-    
-    if (progress >= 1.0 && t !== 'crater') {
-      scene.remove(obj);
-      if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) obj.material.dispose();
-      impactEffects.splice(ei, 1);
-    }
-  }
-  // Keep at most 200 effects to prevent memory leak
-  while (impactEffects.length > 200) {
-    var old = impactEffects.shift();
-    try { scene.remove(old); if(old.geometry)old.geometry.dispose(); if(old.material)old.material.dispose(); } catch(e) {}
   }
   
   // -- Solar storm alpha update --
@@ -1236,6 +1222,58 @@ function animate(){
 
 renderer.render(scene, camera);
 }
+// ===== 信息卡片数据与函数 (移植自 planet.html) =====
+var planetInfo = {
+  Sun:{au:0,radius:'695,700 km',gravity:'274.2 m/s²',orbit:'—',rot:'609.1 小时',desc:'G2V型主序星，占太阳系总质量的99.86%。核心通过氢核聚变每秒释放3.8×10²⁶瓦特能量。',trivia:['太阳每秒将约600万吨氢转化为596万吨氦。','太阳光到达地球需要8分20秒。']},
+  Mercury:{au:0.39,radius:'2,440 km',gravity:'3.70 m/s²',orbit:'88 天',rot:'1,408 小时',desc:'最靠近太阳的行星，无大气层，昼夜温差达600°C。',trivia:['水星虽然最近太阳，但并非最热。','水星有3:2轨道共振——太阳会先升起再倒退。']},
+  Venus:{au:0.72,radius:'6,052 km',gravity:'8.87 m/s²',orbit:'225 天',rot:'-5,832 小时(逆行)',desc:'大小与地球相仿，92倍气压CO₂大气，表面465°C。',trivia:['金星一天比一年还长——太阳从西边升起。','金星是太阳系最亮的天体之一。']},
+  Earth:{au:1.0,radius:'6,371 km',gravity:'9.81 m/s²',orbit:'365.3 天',rot:'23.9 小时',desc:'已知唯一存在生命的行星。71%表面被液态水覆盖。',trivia:['如果没有月球稳定自转轴，地球气候将剧烈波动。','地球内核温度约5,200°C——与太阳表面相当。']},
+  Mars:{au:1.52,radius:'3,390 km',gravity:'3.73 m/s²',orbit:'687 天',rot:'24.6 小时',desc:'红色星球，拥有太阳系最高的山——奥林帕斯山(21.9km)。',trivia:['火星上的日落是蓝色的。','好奇号火星车已运行超过10年。']},
+  Jupiter:{au:5.2,radius:'69,911 km',gravity:'25.9 m/s²',orbit:'11.9 年',rot:'9.9 小时',desc:'太阳系最大行星，大红斑是持续数百年的反气旋风暴。',trivia:['木星大红斑正以肉眼可见的速度缩小。','木星有95颗已确认卫星。']},
+  Saturn:{au:9.54,radius:'58,232 km',gravity:'10.4 m/s²',orbit:'29.5 年',rot:'10.7 小时',desc:'拥有壮丽冰质环系，整体密度低于水。',trivia:['土星环厚度平均仅约20米。','土卫六存在液态甲烷湖泊。']},
+  Uranus:{au:19.2,radius:'25,362 km',gravity:'9.01 m/s²',orbit:'84.0 年',rot:'-17.2 小时(逆行)',desc:'侧躺着自转的冰巨星，甲烷吸收红光呈现青蓝色。',trivia:['天王星是1781年用望远镜发现的第一颗新行星。','其卫星以莎士比亚人物命名。']},
+  Neptune:{au:30.05,radius:'24,622 km',gravity:'11.3 m/s²',orbit:'164.8 年',rot:'16.1 小时',desc:'最远行星，通过数学计算发现。风速高达2,100km/h。',trivia:['海王星通过天王星轨道异常被预测发现。','阳光到达海王星需要约4小时。']},
+  Pluto:{au:39.5,radius:'1,188 km',gravity:'0.62 m/s²',orbit:'248 年',rot:'-153 小时(逆行)',desc:'矮行星，新视野号2015年飞掠揭示心形冰原。',trivia:['冥王星2006年被重新分类为矮行星。','冥王星和冥卫一互相潮汐锁定。']},
+  Bennu:{au:1.1,radius:'~0.26 km',gravity:'<0.001 m/s²',orbit:'1.2 年',rot:'4.3 小时',desc:'近地小行星，OSIRIS-REx任务2020年成功采样。',trivia:['OSIRIS-REx采集了约250克样品返回地球。','Bennu有1/2700概率在2182年撞击地球。']},
+  Kleopatra:{au:2.8,radius:'~108 km',gravity:'<0.01 m/s²',orbit:'4.7 年',rot:'5.4 小时',desc:'狗骨头形小行星，金属质M型。',trivia:['形状酷似狗骨头——两个叶瓣由颈部连接。','其铁镍含量可能价值千万亿美元。']},
+  Eros:{au:1.46,radius:'~8.4 km',gravity:'<0.01 m/s²',orbit:'1.8 年',rot:'5.3 小时',desc:'第一个被航天器环绕着陆的近地小行星。',trivia:['NEAR号2001年在Eros表面成功软着陆。','Eros形似一颗巨大的太空花生。']},
+  Toutatis:{au:2.5,radius:'~2.5 km',gravity:'<0.001 m/s²',orbit:'4.0 年',rot:'130 小时(翻滚)',desc:'具有复杂翻滚运动的近地小行星。嫦娥二号2012年飞掠。',trivia:['Toutatis在太空中翻滚而非绕固定轴旋转。','嫦娥二号在距其3.2km处飞掠。']},
+  Geographos:{au:1.2,radius:'~1.3 km',gravity:'<0.001 m/s²',orbit:'1.4 年',rot:'5.2 小时',desc:'高度细长的近地小行星，极端长宽比。',trivia:['是已知形状最细长的小行星之一。','属于阿波罗型——被归类为潜在危险天体。']}
+};
+var swTriviaIdx = {};
+function showSwInfo(name){
+  var p=planetInfo[name];
+  var d=document.getElementById('swInfoHTML');
+  if(!p||!d){if(d)d.style.display='none';return;}
+  d.style.display='block';
+  var cnNames={Sun:'太阳',Mercury:'水星',Venus:'金星',Earth:'地球',Mars:'火星',Jupiter:'木星',Saturn:'土星',Uranus:'天王星',Neptune:'海王星',Pluto:'冥王星',Bennu:'Bennu',Kleopatra:'Kleopatra',Eros:'Eros',Toutatis:'Toutatis',Geographos:'Geographos'};
+  document.getElementById('swHTMLNameZh').textContent=cnNames[name]||name;
+  document.getElementById('swHTMLNameEn').textContent=name;
+  if(p.au>0){
+    var km=(p.au*149597870).toFixed(0),ls=(p.au*499).toFixed(0);
+    var lt=ls>60?(ls/60).toFixed(0)+' 分钟':ls+' 秒';
+    document.getElementById('swHTMLDist').innerHTML='距太阳 <b style="color:#cfe3f5">'+formatNum(parseInt(km))+' km</b> 光行 <b style="color:#cfe3f5">'+lt+'</b>';
+    document.getElementById('swHTMLSun').textContent='距太阳 '+p.au+' AU';
+  }else{
+    document.getElementById('swHTMLDist').innerHTML='太阳系中心 · 表面 5772K';
+    document.getElementById('swHTMLSun').textContent='';
+  }
+  var s='<div>半径 '+p.radius+'</div><div>表面重力 '+p.gravity+'</div>';
+  if(p.orbit!=='—')s+='<div>公转周期 '+p.orbit+'</div>';
+  s+='<div>自转周期 '+p.rot+'</div>';
+  document.getElementById('swHTMLStats').innerHTML=s;
+  document.getElementById('swHTMLDesc').textContent=p.desc;
+  if(!swTriviaIdx[name])swTriviaIdx[name]=0;
+  document.getElementById('swHTMLTrivia').textContent=p.trivia[swTriviaIdx[name]%p.trivia.length];
+}
+function nextSwTriviaHTML(){
+  var n=document.getElementById('swHTMLNameEn');
+  var name=n?n.textContent:'Sun';
+  swTriviaIdx[name]=(swTriviaIdx[name]||0)+1;
+  if(planetInfo[name])document.getElementById('swHTMLTrivia').textContent=planetInfo[name].trivia[swTriviaIdx[name]%planetInfo[name].trivia.length];
+}
+function formatNum(n){if(n>=1e9)return (n/1e9).toFixed(2)+' 十亿';if(n>=1e6)return (n/1e6).toFixed(2)+' 百万';return n.toLocaleString();}
+
 animate();
 </script>
 
