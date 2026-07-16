@@ -208,9 +208,8 @@ const realAngles = {
 };
 
 
-// ============ 主小行星带 (Asteroid Belt) — 2.1–3.4 AU ============
-// 复刻 Solar-Wanderer: 确定性种子RNG + 高斯倾角9° + sqrt径向 + ±12%散射
-// 压缩映射: 火星20↔木星28, 主带占内40% → 21.5–24
+// ============ 主小行星带 — 延迟加载避免启动卡顿 ============
+setTimeout(function(){
 (function(){
   var count=3000,inner=21.5,outer=24,seed=4242;
   var pos=new Float32Array(count*3);
@@ -230,10 +229,10 @@ const realAngles = {
   var belt=new THREE.Points(geo,mat);belt.frustumCulled=false;
   belt.userData={isBelt:true,speed:0.015};scene.add(belt);
 })();
+}, 1200);  // 1.2s后加载小行星带
 
-// ============ 柯伊伯带 (Kuiper Belt) — 32–48 AU ============
-// 复刻 Solar-Wanderer 完全一致: 种子7777 + 高斯倾角4° + sqrt径向
-// 压缩映射: 海王星=55(30AU) → 32AU×55/30=59, 48AU×55/30=88
+// ============ 柯伊伯带 — 延迟加载 ============
+setTimeout(function(){
 (function(){
   var count=9000,inner=59,outer=88,seed=7777;
   var pos=new Float32Array(count*3);
@@ -253,6 +252,7 @@ const realAngles = {
   var belt=new THREE.Points(geo,mat);belt.frustumCulled=false;
   belt.userData={isBelt:true,speed:0.004};scene.add(belt);
 })();
+}, 2400);  // 2.4s后加载柯伊伯带
 
 const planetMeshes = [];
 
@@ -262,6 +262,10 @@ const planetMeshes = [];
 function parseSTL(buffer){
   var dv=new DataView(buffer);
   var num=dv.getUint32(80,true);
+  // 安全检查：防止损坏/非标STL导致内存溢出
+  if(num<1 || num>500000) { console.error('STL bad triangle count:',num); return null; }
+  var expectedSize=84+num*50;
+  if(buffer.byteLength<expectedSize){ num=Math.floor((buffer.byteLength-84)/50); }
   var verts=new Float32Array(num*9);
   var norms=new Float32Array(num*9);
   var offset=84;
@@ -276,6 +280,8 @@ function parseSTL(buffer){
       norms[vi]=nx; norms[vi+1]=ny; norms[vi+2]=nz;
     }
     offset+=50;
+    // 防止越界
+    if(offset+48>buffer.byteLength) break;
   }
   return {verts:verts, norms:norms, count:num};
 }
@@ -803,14 +809,16 @@ function randomYellowSpot(){
 randomBlueSpot();randomYellowSpot();
 }catch(e){console.log("PARTICLES ERROR: "+e.message+" at line "+e.lineNumber);}
 
-// ===== Asteroid Transit & Jupiter Capture System =====
-// 使用 STL 3D 模型，与 planets[] 中已验证的加载方式一致
-
-var asteroidGroup = new THREE.Group(); scene.add(asteroidGroup);
+// ===== Asteroid Transit & Jupiter Capture System — 延迟加载 =====
+var asteroidGroup = null;
 var CAPTURE_RADIUS = 15.0;
 var CAPTURE_THRESHOLD = 6.0;
 var asteroids = [];
 var impactEffects = [];
+setTimeout(function(){
+asteroidGroup = new THREE.Group(); scene.add(asteroidGroup);
+CAPTURE_RADIUS = 15.0;
+CAPTURE_THRESHOLD = 6.0;
 
 // 小标签工厂 — 纯文字无背景
 function makeSmallLabel(text, colorHex) {
@@ -836,28 +844,30 @@ function makeSmallLabel(text, colorHex) {
 var rockColors = [0xaaaaaa,0xb0b0b0,0xa0a0a0,0xababab,0xb5b5b5,0xa5a5a5,0x9e9e9e,0xa8b0b8,0xa8b8a8,0xb0a0b0,
                   0x989898,0xa8a8a8,0xa2a2a2,0xacacac,0xb2b2b2,0x9a9a9a,0xa6a6a6,0xa8b0c0,0xa5a5a5,0x9c9c9c];
 
-// 6个真实STL小行星模型路径（已验证在设备上正常3D渲染）
+// 8个唯一STL小行星模型
 var STL_MODELS = [
   'models/bennu.stl',
   'models/eros.stl', 
   'models/toutatis.stl',
   'models/geographos.stl',
   'models/kleopatra.stl',
-  'models/asteroid_rq36.stl'
+  'models/asteroid_rq36.stl',
+  'models/itokawa.stl',
+  'models/vesta_a.stl'
 ];
 
-// 6颗唯一STL小行星 — 每颗一种模型，不重复
-for (var ai=0; ai<6; ai++) {
+// 8颗唯一STL小行星 — 每颗一种模型，不重复
+for (var ai=0; ai<8; ai++) {
   var modelPath = STL_MODELS[ai];
   var size = 0.7 + Math.random()*0.4;
-  var isImpactor = (ai >= 3);  // 前3颗 belt，后3颗 Jupiter-crossing
+  var isImpactor = (ai >= 4);  // 前4颗 belt，后4颗 Jupiter-crossing
   var a = isImpactor ? (32 + Math.random()*8) : (21 + Math.random()*8);
   var e = isImpactor ? (0.40 + Math.random()*0.35) : (0.10 + Math.random()*0.30);
   var iAng = (Math.random()-0.5)*0.5;
   var M0 = Math.random()*Math.PI*2;
   var T = isImpactor ? (26 + Math.random()*10) : (150 + Math.random()*300);
   var seed = Math.random()*1000;
-  var labelText = isImpactor ? ('I'+(ai-3)) : ('B'+ai);
+  var labelText = isImpactor ? ('I'+(ai-4)) : ('B'+ai);
   var labelColor = isImpactor ? '#ff8844' : '#ffcc00';
   // 占位球体
   var geo = new THREE.SphereGeometry(size, 8, 5);
@@ -903,7 +913,8 @@ for (var ai=0; ai<6; ai++) {
   })(mesh, modelPath, size, ai, labelText, labelColor);
 }
 
-console.log('ASTEROID: '+asteroids.length+' unique STL rocks — 6 models, 0 duplicates');
+console.log('ASTEROID: '+asteroids.length+' unique STL rocks — 8 models, 0 duplicates');
+}, 3600);  // 3.6s后加载小行星
 
 function solveKepler(M, e) {
   var E = M;
@@ -993,12 +1004,36 @@ function animate(){
   // -- Asteroid transit + Jupiter capture update --
   var jupPos = getJupiterPos();
   var elapsed = performance.now()*0.001;
+  
+  // 每30秒强制一次撞击：找一颗自由小行星拉到木星附近
+  if (!IS_MAIN_SCREEN) {
+    if (!window._lastImpactTime) window._lastImpactTime = performance.now();
+    if (performance.now() - window._lastImpactTime > 30000) {
+      // 找一颗非捕获态、可见的小行星
+      for (var fi=0; fi<asteroids.length; fi++) {
+        var fa = asteroids[fi];
+        if (!fa.captured && fa.mesh.visible) {
+          // 直接拉到木星近旁触发捕获
+          var angle = Math.random()*Math.PI*2;
+          fa.mesh.position.set(
+            jupPos.x + Math.cos(angle)*5,
+            jupPos.y + (Math.random()-0.5)*2,
+            jupPos.z + Math.sin(angle)*5
+          );
+          window._lastImpactTime = performance.now();
+          console.log('FORCE IMPACT: asteroid #'+fi+' pulled to Jupiter');
+          break;
+        }
+      }
+    }
+  }
+  
   asteroids.forEach(function(ast) {
     if (ast.captured) {
       // Captured: orbit Jupiter with fast decay + impact flash
       ast.jupAngle += dt * (2*Math.PI) / 8;   // faster orbit
       ast.jupDist -= dt * 0.05;               // 慢速螺旋（可见坠落过程）
-      if (ast.jupDist < 2.2) {
+      if (ast.jupDist < 2.5) {  // 木星半径2.0+小行星~0.5=表面撞击
         // ===== 撞击：引力波 + 撞击坑 =====
         var impactPos = ast.mesh.position.clone();
         var toJup = impactPos.clone().sub(jupPos).normalize();
@@ -1121,9 +1156,13 @@ function animate(){
     // 检测每颗 transit 小行星
     for (var ai=0; ai<asteroids.length; ai++) {
       var ast = asteroids[ai];
-      if (!ast.mesh.visible || ast.captured) continue;  // 已隐藏或已被捕获的跳过
+      if (!ast.mesh.visible) continue;  // 隐藏的跳过，但捕获的仍需检测！
       var ap = ast.mesh.position.clone();
-      var ar = 0.5;  // transit 小行星近似半径
+      // 用实际包围盒半径，不用硬编码0.5
+      var ar = 0.5;
+      if (ast.mesh.geometry && ast.mesh.geometry.boundingSphere) {
+        ar = ast.mesh.geometry.boundingSphere.radius * (ast.mesh.scale.x || 1);
+      }
       
       for (var bi=0; bi<bodies.length; bi++) {
         var b = bodies[bi];
@@ -1153,6 +1192,20 @@ function animate(){
           setTimeout(function(){ if(resetMesh) resetMesh.visible = true; }, 1500);
           break;  // 一次碰撞只处理第一个命中
         }
+      }
+    }
+    
+    // 小行星之间碰撞检测
+    for (var aj=ai+1; aj<asteroids.length; aj++) {
+      var ast2 = asteroids[aj];
+      if (!ast2.mesh.visible) continue;
+      var d2 = ap.distanceTo(ast2.mesh.position);
+      if (d2 < ar + 0.5) {
+        console.log('COLLISION: asteroid vs asteroid');
+        ast.mesh.visible = false; ast2.mesh.visible = false;
+        var ra=ast.mesh, rb=ast2.mesh;
+        setTimeout(function(){if(ra)ra.visible=true;},1500);
+        setTimeout(function(){if(rb)rb.visible=true;},1500);
       }
     }
   }
