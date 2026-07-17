@@ -1,14 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 太阳系图标：太阳 + 轨道 + 行星 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- 太阳 -->
-    <path android:fillColor="#FFCC00"
-        android:pathData="M54,54m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0"/>
-    <!-- 轨道 -->
-    <path android:fillColor="#00000000" android:strokeColor="#4488CC" android:strokeWidth="1"
-        android:pathData="M54,54m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0"/>
-    <!-- 小圆圈代表行星 -->
-    <path android:fillColor="#4488CC"
-        android:pathData="M89,54m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"/>
+    <!-- 外轨道 -->
+    <path android:fillColor="#00000000" android:strokeColor="#556688AA" android:strokeWidth="0.8"
+        android:pathData="M19,54a35,20 0,1 1,70 0"/>
+    <!-- 内轨道 -->
+    <path android:fillColor="#00000000" android:strokeColor="#446688AA" android:strokeWidth="0.7"
+        android:pathData="M24,54a30,14 0,1 1,60 0"/>
+    <!-- 太阳光晕 -->
+    <path android:fillColor="#44FFAA00"
+        android:pathData="M54,54m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+    <!-- 太阳本体 -->
+    <path android:fillColor="#FFFF8800"
+        android:pathData="M54,54m-14,0a14,14 0,1 1,28 0a14,14 0,1 1,-28 0"/>
+    <!-- 太阳高光 -->
+    <path android:fillColor="#FFFFDD66"
+        android:pathData="M54,54m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+    <!-- 行星1 (水星类) -->
+    <path android:fillColor="#FFCCCCCC"
+        android:pathData="M68,42m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0"/>
+    <!-- 行星2 (地球类，蓝色) -->
+    <path android:fillColor="#FF4488DD"
+        android:pathData="M80,56m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
+    <!-- 行星3 (木星类，带条纹) -->
+    <path android:fillColor="#FFCCBB88"
+        android:pathData="M30,38m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+    <!-- 土星环 -->
+    <path android:fillColor="#00000000" android:strokeColor="#BBCCBB88" android:strokeWidth="1.2"
+        android:pathData="M20,38a10,3 0,1 1,20 0"/>
+    <!-- 行星4 (海王星类) -->
+    <path android:fillColor="#FF4466CC"
+        android:pathData="M24,70m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
 </vector>

@@ -477,6 +477,126 @@
 			"label": "Build+Install+Backup",
 			"type": "shell",
 			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --rerun-tasks --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity; git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.4-clean-css-bg-icosahedron; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Build + Install",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build GL Solar System",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D"
+		},
+		{
+			"label": "Build GL Solar System",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get GL FPS",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarSys:*"
+		},
+		{
+			"label": "Build+Install WebView",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install Jupiter GL",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install restore",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install sun GL",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check GL logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarGL:*"
+		},
+		{
+			"label": "Build+Install shader from files",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check GL shader logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarGL:*"
+		},
+		{
+			"label": "Build+Install SolarSystemGL",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check SolarSys FPS",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarSys:*"
+		},
+		{
+			"label": "Build+Install restore",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install with new icon",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install icon fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install name fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install bg fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install Jupiter fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Build+Install detail fix",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Git Backup",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.5-dual-screen-solar-system; git -C D:\\work\\ai_code\\SolarSystem3D push"
 		}
 	]
 }

@@ -35,7 +35,7 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:extractNativeLibs="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="SolarSystem3D"
+        android:label="双屏太阳系"
         android:resizeableActivity="true"
         android:theme="@style/Theme.AppCompat.NoActionBar" >
 

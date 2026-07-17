@@ -108,7 +108,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\caucy\.gradle\cach
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] C:\Users\caucy\.gradle\caches\transforms-3\f303815f9470f1d712859fb0b35a7f79\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:17:9-38
+		ADDED from D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:17:9-30
 	android:resizeableActivity
 		ADDED from D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:18:9-42
 	android:icon

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <style>
-*{margin:0;padding:0}body{background:radial-gradient(ellipse at center,#0a0a2e 0%,#000010 70%);overflow:hidden}canvas{display:block}
+*{margin:0;padding:0}body{background:#000;overflow:hidden}canvas{display:block}
 </style>
 </head>
 <body>
@@ -19,7 +19,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 <script>
 // ============ 场景 ============
 const scene = new THREE.Scene();
-// 背景由CSS渐变渲染，不走GPU纹理
 
 // 读取 URL 参数: ?focus=Jupiter 表示主屏聚焦模式
 var urlParams = new URLSearchParams(window.location.search);
@@ -43,7 +42,7 @@ if (IS_MAIN_SCREEN) {
   camera.lookAt(0,0,0);
 }
 
-const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, premultipliedAlpha:false});
+const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.physicallyCorrectLights = false;
@@ -65,17 +64,16 @@ scene.add(sunLight);
 const texLoader = new THREE.TextureLoader();
 const TEX = 'https://www.solarsystemscope.com/textures/download/';
 
-// 银河背景 — CSS渲染，零GPU开销
-// scene.background = null 默认即可
-// texLoader.load(TEX+'2k_stars_milky_way.jpg', function(tex){
-//   scene.background = tex;
-//   console.log('Milky Way background loaded');
-// }, undefined, function(){
-//   var sv=[];for(var i=0;i<1400;i++){var r=180+Math.random()*20,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(ph)*Math.cos(th),r*Math.sin(ph)*Math.sin(th),r*Math.cos(ph));}
-//   var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
-//   var starPts=new THREE.Points(sg,new THREE.PointsMaterial({color:0xccccff,size:0.5,sizeAttenuation:false}));
-//   scene.add(starPts);
-// });
+// 银河背景
+scene.background = new THREE.Color(0x000012);
+texLoader.load(TEX+'2k_stars_milky_way.jpg', function(tex){
+  scene.background = tex;
+}, undefined, function(){
+  var sv=[];for(var i=0;i<1400;i++){var r=180+Math.random()*20,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(ph)*Math.cos(th),r*Math.sin(ph)*Math.sin(th),r*Math.cos(ph));}
+  var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
+  var starPts=new THREE.Points(sg,new THREE.PointsMaterial({color:0xccccff,size:0.5,sizeAttenuation:false}));
+  scene.add(starPts);
+});
 
 // ============ 太阳 (16K Plasma Rays 方法: Icosahedron + 3纹理Emissive) ============
 var sunTime=0;
@@ -349,7 +347,10 @@ planets.forEach((p,i)=>{
       }
     });
   } else {
-    geo = new THREE.IcosahedronGeometry(p.size, 3);  // detail=3, 1280三角形
+    // 主屏焦点星球高细节，副屏低细节
+    var isFocus = IS_MAIN_SCREEN && p.name===FOCUS_PLANET;
+    var detail = isFocus ? 5 : (p.size>=1.8 ? 4 : (p.size>=1.0 ? 3 : 2));
+    geo = new THREE.IcosahedronGeometry(p.size, detail);
     mat = new THREE.MeshPhongMaterial({color:p.color, shininess:5, specular:0x111111});
     mesh = new THREE.Mesh(geo, mat);
   }

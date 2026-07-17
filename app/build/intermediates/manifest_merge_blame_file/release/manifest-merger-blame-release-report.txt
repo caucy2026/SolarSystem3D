@@ -59,8 +59,8 @@
 36        android:extractNativeLibs="false"
 37        android:icon="@mipmap/ic_launcher"
 37-->D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:16:9-43
-38        android:label="SolarSystem3D"
-38-->D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:17:9-38
+38        android:label="双屏太阳系"
+38-->D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:17:9-30
 39        android:resizeableActivity="true"
 39-->D:\work\ai_code\SolarSystem3D\app\src\main\AndroidManifest.xml:18:9-42
 40        android:theme="@style/Theme.AppCompat.NoActionBar" >
