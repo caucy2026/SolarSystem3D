@@ -924,12 +924,10 @@ function getJupiterPos() {
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.1);
-  // FPS + debug
+  // FPS
   fpsFrames++; fpsTime+=dt;
   if(fpsTime>=0.5){
-    var tris = countSceneTriangles();
-    fpsEl.textContent = 'FPS:'+Math.round(fpsFrames/fpsTime)+' △:'+(tris/1000).toFixed(1)+'K';
-    if(!IS_MAIN_SCREEN && fpsTime>=0.5) console.log('FPS:'+Math.round(fpsFrames/fpsTime)+' tris:'+tris);
+    fpsEl.textContent = 'FPS:'+Math.round(fpsFrames/fpsTime);
     fpsFrames=0;fpsTime=0;
   }
   sun.rotation.y += dt * 0.3;

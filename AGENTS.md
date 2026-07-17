@@ -1,6 +1,7 @@
 # SolarSystem3D — AI 编程助手指南
 
 > 双屏 3D 太阳系 Android 应用。Three.js r150 WebView 渲染，Mali-G52 GPU，双屏异显。
+> 原生 GL 验证已完成：WebView 比原生 GL 慢 20-35%，详见 `docs/native-gl-architecture.md`
 
 ---
 
@@ -62,7 +63,8 @@ adb install -r D:\work\ai_code\SolarSystem3D\app\build\outputs\apk\release\app-r
 | `SolarState.kt` | 单例：MainActivity / SolarPresentation 引用 + 回调 |
 | **`planet.html`** | 主屏渲染：单星球 3D（Three.js）+ `#swInfo` 信息卡片 + `showPlanet/showSwInfo` |
 | **`solar.html`** | 副屏渲染：太阳系全景 + Transit 小行星 + 木星撞击系统（引力波/坑） |
-| `app/src/main/assets/models/` | STL 3D 小行星模型（bennu/eros/toutatis/geographos/kleopatra/asteroid_rq36.stl） |
+| `SolarGLRenderer.kt` | 🧪 原生 GLES 2.0 太阳渲染器（验证用，后续可扩展为完整场景） |
+| `app/src/main/assets/models/` | STL 3D 小行星模型（bennu/eros/toutatis/geographos/kleopatra/asteroid_rq36/itokawa/vesta_a） |
 
 ---
 

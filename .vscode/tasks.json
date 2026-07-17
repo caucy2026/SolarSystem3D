@@ -62,6 +62,211 @@
 			"label": "Git Backup V41",
 			"type": "shell",
 			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.1; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check Logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -t 200 *:W | Select-String -Pattern \"chromium|console|SOLAR|FPS|JS:|PARTICLES\" | Select-Object -Last 60"
+		},
+		{
+			"label": "adb logcat",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -t 100"
+		},
+		{
+			"label": "adb logcat 300 lines",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -t 300"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get JS Timing Logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s MainActivity:* SolarPres:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Capture R after hiding sun",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -c; timeout /t 8 /nobreak > nul; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:* | findstr \"FPS\""
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get Logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Get Both Screens Logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s MainActivity:* SolarPres:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get logs after fix",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -c; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Get logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get DEBUG2 logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get MODE0 Logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Force restart",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get fresh logs MODE0",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Force install & launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get MODE1 logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Install test",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get sun-only log",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Test sun only",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get sun+planets log",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check FPS logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarPres:* MainActivity:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Reconnect ADB",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe connect 192.168.3.54; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Check native GL logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarGL:* AndroidRuntime:* libEGL:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Get GL FPS logs",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe logcat -d -s SolarGL:*"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am force-stop com.solar.dualscreen; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Git Backup",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.2-native-gl-validation; git -C D:\\work\\ai_code\\SolarSystem3D push"
 		}
 	]
 }

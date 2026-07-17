@@ -50,7 +50,12 @@ val texDir = File(filesDir, "planet_textures")
             settings.domStorageEnabled = true
             settings.allowFileAccess = true
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            webChromeClient = WebChromeClient()
+            webChromeClient = object : WebChromeClient() {
+                override fun onConsoleMessage(msg: android.webkit.ConsoleMessage): Boolean {
+                    Log.i(TAG, "JS|${msg.messageLevel()}| ${msg.message()}")
+                    return true
+                }
+            }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                     val url = request.url.toString()
