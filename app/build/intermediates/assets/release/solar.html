@@ -450,12 +450,6 @@ if (IS_MAIN_SCREEN) {
 }
 
 
-// ============ FPS ============
-let fpsFrames=0, fpsTime=0;
-const fpsEl = document.createElement('div');
-fpsEl.style.cssText = 'position:fixed;top:4px;left:4px;color:#888;font:12px monospace;pointer-events:none;z-index:999;background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:3px';
-document.body.appendChild(fpsEl);
-
 function countSceneTriangles(){
   var total=0;
   scene.traverse(function(o){
@@ -927,12 +921,6 @@ function getJupiterPos() {
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.1);
-  // FPS
-  fpsFrames++; fpsTime+=dt;
-  if(fpsTime>=0.5){
-    fpsEl.textContent = 'FPS:'+Math.round(fpsFrames/fpsTime);
-    fpsFrames=0;fpsTime=0;
-  }
   sun.rotation.y += dt * 0.3;
   sunTime += dt; sunMat.uniforms.uTime.value = sunTime;
   // 星带缓慢旋转

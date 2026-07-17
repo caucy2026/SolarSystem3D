@@ -597,6 +597,21 @@
 			"label": "Git Backup",
 			"type": "shell",
 			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.5-dual-screen-solar-system; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Check git log",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D log --oneline -1"
+		},
+		{
+			"label": "Git push",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Build+Backup",
+			"type": "shell",
+			"command": "$env:JAVA_HOME='D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7'; D:\\work\\ai_code\\tools\\jdk-17\\jdk-17.0.14+7\\bin\\java.exe -classpath 'D:\\work\\ai_code\\SolarSystem3D\\gradle\\wrapper\\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain assembleRelease --no-daemon -p D:\\work\\ai_code\\SolarSystem3D; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.6-readme-no-fps; git -C D:\\work\\ai_code\\SolarSystem3D push"
 		}
 	]
 }
