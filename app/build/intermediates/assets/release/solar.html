@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <style>
-*{margin:0;padding:0}body{background:#000015;overflow:hidden}canvas{display:block}
+*{margin:0;padding:0}body{background:radial-gradient(ellipse at center,#0a0a2e 0%,#000010 70%);overflow:hidden}canvas{display:block}
 </style>
 </head>
 <body>
@@ -19,7 +19,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 <script>
 // ============ 场景 ============
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000015);
+// 背景由CSS渐变渲染，不走GPU纹理
 
 // 读取 URL 参数: ?focus=Jupiter 表示主屏聚焦模式
 var urlParams = new URLSearchParams(window.location.search);
@@ -43,7 +43,7 @@ if (IS_MAIN_SCREEN) {
   camera.lookAt(0,0,0);
 }
 
-const renderer = new THREE.WebGLRenderer({antialias:true});
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, premultipliedAlpha:false});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.physicallyCorrectLights = false;
@@ -65,17 +65,17 @@ scene.add(sunLight);
 const texLoader = new THREE.TextureLoader();
 const TEX = 'https://www.solarsystemscope.com/textures/download/';
 
-// 银河背景
-scene.background = new THREE.Color(0x000012);
-texLoader.load(TEX+'2k_stars_milky_way.jpg', function(tex){
-  scene.background = tex;
-  console.log('Milky Way background loaded');
-}, undefined, function(){
-  var sv=[];for(var i=0;i<1400;i++){var r=180+Math.random()*20,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(ph)*Math.cos(th),r*Math.sin(ph)*Math.sin(th),r*Math.cos(ph));}
-  var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
-  var starPts=new THREE.Points(sg,new THREE.PointsMaterial({color:0xccccff,size:0.5,sizeAttenuation:false}));
-  scene.add(starPts);
-});
+// 银河背景 — CSS渲染，零GPU开销
+// scene.background = null 默认即可
+// texLoader.load(TEX+'2k_stars_milky_way.jpg', function(tex){
+//   scene.background = tex;
+//   console.log('Milky Way background loaded');
+// }, undefined, function(){
+//   var sv=[];for(var i=0;i<1400;i++){var r=180+Math.random()*20,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(ph)*Math.cos(th),r*Math.sin(ph)*Math.sin(th),r*Math.cos(ph));}
+//   var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
+//   var starPts=new THREE.Points(sg,new THREE.PointsMaterial({color:0xccccff,size:0.5,sizeAttenuation:false}));
+//   scene.add(starPts);
+// });
 
 // ============ 太阳 (16K Plasma Rays 方法: Icosahedron + 3纹理Emissive) ============
 var sunTime=0;
@@ -104,7 +104,7 @@ for(var i=0;i<200;i++){var x=Math.random()*1024,y=Math.random()*512,dy=Math.abs(
 var helioTex=new THREE.CanvasTexture(hCanvas);
 
 // Icosahedron网格 + Emissive Shader
-var sunGeo=new THREE.IcosahedronGeometry(3.5,5);  // detail 5, ~20480三角形
+var sunGeo=new THREE.IcosahedronGeometry(3.5,4);  // detail 4, ~5120三角形
 var sunMat=new THREE.ShaderMaterial({
   uniforms:{uEmission:{value:emissionTex},uPlasma:{value:plasmaTex},uHelio:{value:helioTex},uTime:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
@@ -349,7 +349,7 @@ planets.forEach((p,i)=>{
       }
     });
   } else {
-    geo = new THREE.SphereGeometry(p.size, 24, 12);
+    geo = new THREE.IcosahedronGeometry(p.size, 3);  // detail=3, 1280三角形
     mat = new THREE.MeshPhongMaterial({color:p.color, shininess:5, specular:0x111111});
     mesh = new THREE.Mesh(geo, mat);
   }
@@ -399,7 +399,7 @@ planets.forEach((p,i)=>{
 
   // 卫星（带名称标签）
   (p.moons||[]).forEach((m, mi)=>{
-    const mGeo = new THREE.SphereGeometry(m.size, 16, 8);
+    const mGeo = new THREE.IcosahedronGeometry(m.size, 2);  // detail=2, 320三角形
     const mMat = new THREE.MeshPhongMaterial({color:m.color, shininess:m.tex?5:3, specular:m.tex?0x111111:0x000000});
     const mMesh = new THREE.Mesh(mGeo, mMat);
     // 确定性初始角度：用卫星名+行星名做种子，两边屏幕一致
@@ -988,7 +988,6 @@ function animate(){
     const pm = planetMeshes.find(m => m.userData.planet.name === pName);
     if(pm) ring.position.copy(pm.position);
   });
-
   // -- Asteroid transit + Jupiter capture update --
   var jupPos = getJupiterPos();
   var elapsed = performance.now()*0.001;
@@ -1254,7 +1253,6 @@ function animate(){
   var be=now-blueStart,ba=be<stormFull?1.0:Math.max(0,1.0-(be-stormFull)/stormFade);
   if(be>stormFull+stormFade){randomBlueSpot();ba=1.0;}
   fMat.uniforms.uAlpha.value=ba;
-  if(Math.floor(performance.now()/3000)!==Math.floor((performance.now()-16)/3000))console.log("PARTICLES: blue alpha="+ba.toFixed(2)+" elap="+(performance.now()-blueStart).toFixed(0));
   fMat.uniforms.uTime.value=performance.now()*.001;
   var ye=now-yellowStart,ya=ye<stormFull?1.0:Math.max(0,1.0-(ye-stormFull)/stormFade);
   if(ye>stormFull+stormFade){randomYellowSpot();ya=1.0;}
