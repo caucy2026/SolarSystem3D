@@ -267,6 +267,21 @@
 			"label": "Git Backup",
 			"type": "shell",
 			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.2-native-gl-validation; git -C D:\\work\\ai_code\\SolarSystem3D push"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Install & Launch",
+			"type": "shell",
+			"command": "D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe install -r D:\\work\\ai_code\\SolarSystem3D\\app\\build\\outputs\\apk\\release\\app-release.apk; D:\\work\\ai_code\\tools\\android-sdk\\platform-tools\\adb.exe shell am start -n com.solar.dualscreen/.MainActivity"
+		},
+		{
+			"label": "Git Backup",
+			"type": "shell",
+			"command": "git -C D:\\work\\ai_code\\SolarSystem3D add -A; git -C D:\\work\\ai_code\\SolarSystem3D commit -m V4.3-sun-detail5-particles-fix; git -C D:\\work\\ai_code\\SolarSystem3D push"
 		}
 	]
 }

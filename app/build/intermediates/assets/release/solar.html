@@ -104,7 +104,7 @@ for(var i=0;i<200;i++){var x=Math.random()*1024,y=Math.random()*512,dy=Math.abs(
 var helioTex=new THREE.CanvasTexture(hCanvas);
 
 // Icosahedron网格 + Emissive Shader
-var sunGeo=new THREE.IcosahedronGeometry(3.5,4);  // detail 8→4, 131万→5120三角形
+var sunGeo=new THREE.IcosahedronGeometry(3.5,5);  // detail 5, ~20480三角形
 var sunMat=new THREE.ShaderMaterial({
   uniforms:{uEmission:{value:emissionTex},uPlasma:{value:plasmaTex},uHelio:{value:helioTex},uTime:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
@@ -556,6 +556,8 @@ renderer.domElement.addEventListener('touchend', function(e) {
   }
   isDragging = false;
   downX = -1;
+  // 副屏手指离开立即停止，不要惯性
+  if (!IS_MAIN_SCREEN) { velTheta = 0; velPhi = 0; }
 });
 
 // 鼠标滚轮缩放
@@ -586,8 +588,8 @@ function updateMainScreenVisibility() {
   // 太阳
   if (typeof sun !== 'undefined' && sun) sun.visible = showAll || FOCUS_PLANET === 'Sun';
   // 太阳风暴粒子 — 主屏全隐藏
-  if(typeof fp !== 'undefined') fp.visible = showAll;
-  if(typeof ffp !== 'undefined') ffp.visible = showAll;
+  if(typeof fp !== 'undefined') fp.visible = showAll || FOCUS_PLANET === 'Sun';
+  if(typeof ffp !== 'undefined') ffp.visible = showAll || FOCUS_PLANET === 'Sun';
   
   // 轨道线
   scene.children.forEach(function(c){

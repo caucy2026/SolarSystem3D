@@ -1,7 +1,7 @@
 # 原生 OpenGL ES 渲染架构 — 验证与对比
 
-> 日期：2026-07-16 ~ 2026-07-17  
-> 目标：验证 WebView + Three.js WebGL 是否引入额外 GPU 开销，评估原生 GL 迁移价值  
+> 日期：2026-07-16 ~ 2026-07-17
+> 目标：验证 WebView + Three.js WebGL 是否引入额外 GPU 开销，评估原生 GL 迁移价值
 > 结论：WebView WebGL 比原生 GL 慢约 20-35%，太阳复杂 fragment shader 是双重瓶颈
 
 ---
@@ -235,7 +235,7 @@ override fun onTouchEvent(e: MotionEvent): Boolean {
 }
 ```
 
-**已实现：** 拖拽旋转 + 双指缩放  
+**已实现：** 拖拽旋转 + 双指缩放
 **待实现（后续）：** 点击拾取行星（raycasting）、惯性旋转、信息卡片 Overlay
 
 ---
